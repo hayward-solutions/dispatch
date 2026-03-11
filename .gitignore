@@ -2,6 +2,6 @@ bin/
 tmp/
 .env
 *.exe
-dispatch
+/dispatch
 tailwindcss
 web/static/css/app.css
