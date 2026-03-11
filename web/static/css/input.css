@@ -157,6 +157,19 @@ body {
     @apply bg-surface-hover;
 }
 
+/* Sidebar responsive */
+.sidebar-aside {
+    @apply fixed inset-y-0 left-0 z-50 -translate-x-full transition-transform duration-200 ease-in-out;
+}
+.sidebar-aside.open {
+    @apply translate-x-0;
+}
+@media (min-width: 768px) {
+    .sidebar-aside {
+        @apply relative translate-x-0;
+    }
+}
+
 /* Sidebar link */
 .sidebar-link {
     @apply flex items-center gap-2 px-3 py-1.5 rounded-md text-[13px] text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-colors no-underline;

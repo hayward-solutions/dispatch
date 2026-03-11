@@ -1,5 +1,24 @@
 // Dispatch v2 - JS for htmx enhancements
 
+// Mobile sidebar toggle
+function toggleSidebar() {
+    var sidebar = document.getElementById("sidebar");
+    var backdrop = document.getElementById("sidebar-backdrop");
+    if (!sidebar) return;
+    sidebar.classList.toggle("open");
+    if (backdrop) backdrop.classList.toggle("hidden");
+}
+
+// Close sidebar on navigation (mobile)
+document.body.addEventListener("htmx:beforeRequest", function () {
+    var sidebar = document.getElementById("sidebar");
+    var backdrop = document.getElementById("sidebar-backdrop");
+    if (sidebar && window.innerWidth < 768) {
+        sidebar.classList.remove("open");
+        if (backdrop) backdrop.classList.add("hidden");
+    }
+});
+
 // Toast notifications triggered by HX-Trigger response header
 document.body.addEventListener("showToast", function (e) {
     const { message, type } = e.detail;
