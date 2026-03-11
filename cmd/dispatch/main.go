@@ -114,53 +114,49 @@ func run() error {
 	mux.HandleFunc("POST /auth/logout", authHandler.Logout)
 
 	// Redirect root to repos
-	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" {
-			http.NotFound(w, r)
-			return
-		}
+	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/repos", http.StatusSeeOther)
 	})
 
-	// Protected routes
-	protected := http.NewServeMux()
+	// Protected routes - helper to wrap handlers with auth middleware
+	protect := func(pattern string, handler http.HandlerFunc) {
+		mux.Handle(pattern, authMiddleware.RequireAuth(http.HandlerFunc(handler)))
+	}
 
-	protected.HandleFunc("GET /dashboard", dashboardHandler.Dashboard)
+	protect("GET /dashboard", dashboardHandler.Dashboard)
 
-	protected.HandleFunc("GET /repos", reposHandler.ReposPage)
-	protected.HandleFunc("GET /repos/search", reposHandler.SearchRepos)
-	protected.HandleFunc("GET /repos/{owner}/{name}", reposHandler.RepoDetail)
-	protected.HandleFunc("POST /repos/{owner}/{name}/track", reposHandler.TrackRepo)
-	protected.HandleFunc("DELETE /repos/{owner}/{name}/track", reposHandler.UntrackRepo)
-	protected.HandleFunc("GET /sidebar/repos", reposHandler.SidebarRepos)
+	protect("GET /repos", reposHandler.ReposPage)
+	protect("GET /repos/search", reposHandler.SearchRepos)
+	protect("GET /repos/{owner}/{name}", reposHandler.RepoDetail)
+	protect("POST /repos/{owner}/{name}/track", reposHandler.TrackRepo)
+	protect("DELETE /repos/{owner}/{name}/track", reposHandler.UntrackRepo)
+	protect("GET /sidebar/repos", reposHandler.SidebarRepos)
 
-	protected.HandleFunc("GET /repos/{owner}/{name}/runs", workflowsHandler.ListWorkflowRuns)
-	protected.HandleFunc("GET /repos/{owner}/{name}/runs/{runID}/jobs", workflowsHandler.GetRunJobs)
-	protected.HandleFunc("GET /repos/{owner}/{name}/jobs/{jobID}/log", workflowsHandler.GetJobLog)
+	protect("GET /repos/{owner}/{name}/runs", workflowsHandler.ListWorkflowRuns)
+	protect("GET /repos/{owner}/{name}/runs/{runID}/jobs", workflowsHandler.GetRunJobs)
+	protect("GET /repos/{owner}/{name}/jobs/{jobID}/log", workflowsHandler.GetJobLog)
 
-	protected.HandleFunc("GET /repos/{owner}/{name}/environments", envsHandler.ListEnvironments)
-	protected.HandleFunc("GET /repos/{owner}/{name}/environments/new", envsHandler.NewEnvironmentPage)
-	protected.HandleFunc("POST /repos/{owner}/{name}/environments", envsHandler.CreateEnvironment)
-	protected.HandleFunc("GET /repos/{owner}/{name}/environments/{env}", envsHandler.EnvDetail)
-	protected.HandleFunc("DELETE /repos/{owner}/{name}/environments/{env}", envsHandler.DeleteEnvironment)
-	protected.HandleFunc("GET /repos/{owner}/{name}/environments/{env}/export", envsHandler.ExportEnvConfig)
+	protect("GET /repos/{owner}/{name}/environments", envsHandler.ListEnvironments)
+	protect("GET /repos/{owner}/{name}/environments/new", envsHandler.NewEnvironmentPage)
+	protect("POST /repos/{owner}/{name}/environments", envsHandler.CreateEnvironment)
+	protect("GET /repos/{owner}/{name}/environments/{env}", envsHandler.EnvDetail)
+	protect("DELETE /repos/{owner}/{name}/environments/{env}", envsHandler.DeleteEnvironment)
+	protect("GET /repos/{owner}/{name}/environments/{env}/export", envsHandler.ExportEnvConfig)
 
-	protected.HandleFunc("GET /repos/{owner}/{name}/environments/{env}/variables", envsHandler.ListEnvVariables)
-	protected.HandleFunc("POST /repos/{owner}/{name}/environments/{env}/variables", envsHandler.CreateEnvVariable)
-	protected.HandleFunc("PATCH /repos/{owner}/{name}/environments/{env}/variables/{varName}", envsHandler.UpdateEnvVariable)
-	protected.HandleFunc("DELETE /repos/{owner}/{name}/environments/{env}/variables/{varName}", envsHandler.DeleteEnvVariable)
+	protect("GET /repos/{owner}/{name}/environments/{env}/variables", envsHandler.ListEnvVariables)
+	protect("POST /repos/{owner}/{name}/environments/{env}/variables", envsHandler.CreateEnvVariable)
+	protect("PATCH /repos/{owner}/{name}/environments/{env}/variables/{varName}", envsHandler.UpdateEnvVariable)
+	protect("DELETE /repos/{owner}/{name}/environments/{env}/variables/{varName}", envsHandler.DeleteEnvVariable)
 
-	protected.HandleFunc("GET /repos/{owner}/{name}/environments/{env}/secrets", envsHandler.ListEnvSecrets)
-	protected.HandleFunc("POST /repos/{owner}/{name}/environments/{env}/secrets", envsHandler.CreateEnvSecret)
-	protected.HandleFunc("DELETE /repos/{owner}/{name}/environments/{env}/secrets/{secretName}", envsHandler.DeleteEnvSecret)
+	protect("GET /repos/{owner}/{name}/environments/{env}/secrets", envsHandler.ListEnvSecrets)
+	protect("POST /repos/{owner}/{name}/environments/{env}/secrets", envsHandler.CreateEnvSecret)
+	protect("DELETE /repos/{owner}/{name}/environments/{env}/secrets/{secretName}", envsHandler.DeleteEnvSecret)
 
-	protected.HandleFunc("GET /repos/{owner}/{name}/environments/{env}/deployments", envsHandler.ListEnvDeployments)
-	protected.HandleFunc("GET /repos/{owner}/{name}/environments/{env}/dispatch", envsHandler.DispatchPage)
-	protected.HandleFunc("POST /repos/{owner}/{name}/dispatch", envsHandler.DispatchWorkflow)
-	protected.HandleFunc("GET /repos/{owner}/{name}/environments/{env}/workflows", envsHandler.ListDispatchWorkflows)
-	protected.HandleFunc("GET /repos/{owner}/{name}/refs", envsHandler.ListRepoRefs)
-
-	mux.Handle("/", authMiddleware.RequireAuth(protected))
+	protect("GET /repos/{owner}/{name}/environments/{env}/deployments", envsHandler.ListEnvDeployments)
+	protect("GET /repos/{owner}/{name}/environments/{env}/dispatch", envsHandler.DispatchPage)
+	protect("POST /repos/{owner}/{name}/dispatch", envsHandler.DispatchWorkflow)
+	protect("GET /repos/{owner}/{name}/environments/{env}/workflows", envsHandler.ListDispatchWorkflows)
+	protect("GET /repos/{owner}/{name}/refs", envsHandler.ListRepoRefs)
 
 	// Server
 	srv := &http.Server{
