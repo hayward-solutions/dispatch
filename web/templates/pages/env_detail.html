@@ -30,7 +30,7 @@
                 {{template "icon-dispatch" .}}
                 <h2 class="text-sm font-medium text-text-primary">Run Workflow</h2>
             </div>
-            <div hx-get="/repos/{{.Repo.Owner}}/{{.Repo.Name}}/environments/{{.EnvName}}/dispatch"
+            <div hx-get="/repos/{{.Repo.Owner}}/{{.Repo.Name}}/environments/{{.EnvName}}/workflows"
                  hx-trigger="load"
                  hx-target="this"
                  hx-disinherit="hx-target hx-swap">
