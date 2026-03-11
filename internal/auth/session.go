@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/hayward-solutions/dispatch.v2/internal/database"
 )
 
 type Session struct {
@@ -18,11 +18,11 @@ type Session struct {
 }
 
 type SessionStore struct {
-	pool   *pgxpool.Pool
+	pool   database.Pool
 	maxAge time.Duration
 }
 
-func NewSessionStore(pool *pgxpool.Pool, maxAgeSeconds int) *SessionStore {
+func NewSessionStore(pool database.Pool, maxAgeSeconds int) *SessionStore {
 	return &SessionStore{
 		pool:   pool,
 		maxAge: time.Duration(maxAgeSeconds) * time.Second,

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/hayward-solutions/dispatch.v2/internal/database"
 )
 
 type User struct {
@@ -20,10 +20,10 @@ type User struct {
 }
 
 type UserStore struct {
-	pool *pgxpool.Pool
+	pool database.Pool
 }
 
-func NewUserStore(pool *pgxpool.Pool) *UserStore {
+func NewUserStore(pool database.Pool) *UserStore {
 	return &UserStore{pool: pool}
 }
 

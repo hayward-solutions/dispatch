@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/hayward-solutions/dispatch.v2/internal/database"
 )
 
 type TrackedRepo struct {
@@ -18,10 +18,10 @@ type TrackedRepo struct {
 }
 
 type TrackedRepoStore struct {
-	pool *pgxpool.Pool
+	pool database.Pool
 }
 
-func NewTrackedRepoStore(pool *pgxpool.Pool) *TrackedRepoStore {
+func NewTrackedRepoStore(pool database.Pool) *TrackedRepoStore {
 	return &TrackedRepoStore{pool: pool}
 }
 
