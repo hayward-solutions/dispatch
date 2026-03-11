@@ -16,7 +16,7 @@
 </div>
 
 <form id="env-create-form"
-      hx-post="/htmx/repos/{{.Repo.Owner}}/{{.Repo.Name}}/environments"
+      hx-post="/repos/{{.Repo.Owner}}/{{.Repo.Name}}/environments"
       hx-swap="none"
       class="flex flex-col gap-4 max-w-2xl">
 
@@ -122,7 +122,7 @@
                 return;
             }
 
-            fetch('/htmx/repos/{{.Repo.Owner}}/{{.Repo.Name}}/environments/' + encodeURIComponent(env) + '/export')
+            fetch('/repos/{{.Repo.Owner}}/{{.Repo.Name}}/environments/' + encodeURIComponent(env) + '/export')
                 .then(r => r.json())
                 .then(data => {
                     clearRows('var');

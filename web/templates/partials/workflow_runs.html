@@ -30,7 +30,7 @@
             <svg class="w-3.5 h-3.5 text-text-muted transition-transform group-open:rotate-90 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </summary>
         <div class="border-t border-border-subtle bg-surface-base/30"
-             hx-get="/htmx/repos/{{$.Owner}}/{{$.Name}}/runs/{{.ID}}/jobs"
+             hx-get="/repos/{{$.Owner}}/{{$.Name}}/runs/{{.ID}}/jobs"
              hx-trigger="revealed"
              hx-target="this"
              hx-swap="innerHTML">

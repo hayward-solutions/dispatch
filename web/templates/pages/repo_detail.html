@@ -15,11 +15,11 @@
         <div class="flex items-center gap-2">
             {{if .Tracked}}
             <button class="btn btn-ghost text-xs"
-                    hx-delete="/htmx/repos/{{.Repo.Owner}}/{{.Repo.Name}}/track"
+                    hx-delete="/repos/{{.Repo.Owner}}/{{.Repo.Name}}/track"
                     hx-swap="none">Untrack</button>
             {{else}}
             <button class="btn btn-primary text-xs"
-                    hx-post="/htmx/repos/{{.Repo.Owner}}/{{.Repo.Name}}/track"
+                    hx-post="/repos/{{.Repo.Owner}}/{{.Repo.Name}}/track"
                     hx-swap="none">Track</button>
             {{end}}
             <a href="{{.Repo.HTMLURL}}" target="_blank" class="btn btn-ghost text-xs inline-flex items-center gap-1">
@@ -38,7 +38,7 @@
                 {{template "icon-plus" .}}
             </a>
         </div>
-        <div hx-get="/htmx/repos/{{.Repo.Owner}}/{{.Repo.Name}}/environments"
+        <div hx-get="/repos/{{.Repo.Owner}}/{{.Repo.Name}}/environments"
              hx-trigger="load, refreshEnvList from:body"
              hx-target="this"
              hx-disinherit="hx-target hx-swap">
@@ -51,7 +51,7 @@
             {{template "icon-workflow" .}}
             <h2 class="text-sm font-medium text-text-primary">Workflow Runs</h2>
         </div>
-        <div hx-get="/htmx/repos/{{.Repo.Owner}}/{{.Repo.Name}}/runs"
+        <div hx-get="/repos/{{.Repo.Owner}}/{{.Repo.Name}}/runs"
              hx-trigger="load"
              hx-target="this"
              hx-disinherit="hx-target hx-swap">
