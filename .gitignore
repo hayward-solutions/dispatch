@@ -1,6 +1,8 @@
 bin/
 tmp/
 .env
+.idea/
+.claude/
 *.exe
 /dispatch
 tailwindcss
