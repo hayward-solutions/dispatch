@@ -1,5 +1,9 @@
 # Dispatch
 
+[![CI](https://github.com/hayward-solutions/dispatch.v2/actions/workflows/ci.yml/badge.svg)](https://github.com/hayward-solutions/dispatch.v2/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Go](https://img.shields.io/badge/Go-1.25+-00ADD8?logo=go&logoColor=white)](https://go.dev)
+
 A self-hosted dashboard for managing GitHub Actions workflows and environments. Authenticate with GitHub OAuth, track repositories, manage environment variables and secrets, dispatch workflows, and view deployment history — all from a single UI.
 
 ## Features
@@ -75,29 +79,16 @@ make clean      # Remove build artifacts
 
 ## Deployment
 
-### Docker
+For full deployment instructions including GitHub OAuth App setup, reverse proxy configuration, and troubleshooting, see [DEPLOYMENT.md](DEPLOYMENT.md).
 
-```bash
-# Build CSS first (it gets embedded in the binary)
-make css
-
-# Build the container
-docker build -t dispatch .
-
-# Run
-docker run -p 8080:8080 --env-file .env dispatch
-```
-
-### Docker Compose
+### Quick Start with Docker Compose
 
 ```bash
 cp .env.example .env
-# Edit .env with your configuration
+# Edit .env with your configuration (see DEPLOYMENT.md)
 
 docker compose up -d
 ```
-
-The compose file starts both PostgreSQL and the Dispatch server. The `DATABASE_URL` is automatically configured to use the internal Docker network.
 
 ## Architecture
 
@@ -107,3 +98,15 @@ The compose file starts both PostgreSQL and the Dispatch server. The `DATABASE_U
 - **PostgreSQL** — user sessions, tracked repositories
 - **go-github** — GitHub API client for repos, environments, workflows, and deployments
 - **Embedded assets** — templates and static files compiled into the binary via `go:embed`
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## Security
+
+To report a security vulnerability, please see [SECURITY.md](SECURITY.md).
+
+## License
+
+This project is licensed under the Apache License 2.0 — see the [LICENSE](LICENSE) file for details.
