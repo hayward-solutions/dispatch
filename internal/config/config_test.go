@@ -13,6 +13,7 @@ func clearEnv(t *testing.T) {
 		"PORT", "BASE_URL", "DATABASE_URL", "GITHUB_CLIENT_ID",
 		"GITHUB_CLIENT_SECRET", "ENCRYPTION_KEY", "SESSION_SECRET",
 		"LOG_LEVEL", "SESSION_MAX_AGE",
+		"DB_HOST", "DB_PORT", "DB_USER", "DB_PASSWORD", "DB_NAME", "DB_SSLMODE",
 	} {
 		t.Setenv(key, "")
 		os.Unsetenv(key)
@@ -91,6 +92,66 @@ func TestLoad_MissingDatabaseURL(t *testing.T) {
 	_, err := Load()
 	if err == nil {
 		t.Fatal("expected error for missing DATABASE_URL")
+	}
+}
+
+func TestLoad_IndividualDBFields(t *testing.T) {
+	clearEnv(t)
+	t.Setenv("DB_HOST", "db.example.com")
+	t.Setenv("DB_PORT", "5433")
+	t.Setenv("DB_USER", "myuser")
+	t.Setenv("DB_PASSWORD", "mypass")
+	t.Setenv("DB_NAME", "mydb")
+	t.Setenv("DB_SSLMODE", "require")
+	t.Setenv("GITHUB_CLIENT_ID", "id")
+	t.Setenv("GITHUB_CLIENT_SECRET", "secret")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	expected := "postgres://myuser:mypass@db.example.com:5433/mydb?sslmode=require"
+	if cfg.DatabaseURL != expected {
+		t.Errorf("expected DatabaseURL %q, got %q", expected, cfg.DatabaseURL)
+	}
+}
+
+func TestLoad_IndividualDBFieldsDefaults(t *testing.T) {
+	clearEnv(t)
+	t.Setenv("DB_HOST", "localhost")
+	t.Setenv("DB_USER", "dispatch")
+	t.Setenv("DB_NAME", "dispatch")
+	t.Setenv("GITHUB_CLIENT_ID", "id")
+	t.Setenv("GITHUB_CLIENT_SECRET", "secret")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	expected := "postgres://dispatch@localhost:5432/dispatch?sslmode=disable"
+	if cfg.DatabaseURL != expected {
+		t.Errorf("expected DatabaseURL %q, got %q", expected, cfg.DatabaseURL)
+	}
+}
+
+func TestLoad_DatabaseURLTakesPrecedence(t *testing.T) {
+	clearEnv(t)
+	t.Setenv("DATABASE_URL", "postgres://localhost/test")
+	t.Setenv("DB_HOST", "other-host")
+	t.Setenv("DB_USER", "other-user")
+	t.Setenv("DB_NAME", "other-db")
+	t.Setenv("GITHUB_CLIENT_ID", "id")
+	t.Setenv("GITHUB_CLIENT_SECRET", "secret")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if cfg.DatabaseURL != "postgres://localhost/test" {
+		t.Errorf("expected DATABASE_URL to take precedence, got %q", cfg.DatabaseURL)
 	}
 }
 

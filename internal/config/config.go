@@ -12,15 +12,42 @@ import (
 )
 
 type Config struct {
-	Port              int
-	BaseURL           string
-	DatabaseURL       string
-	GitHubClientID    string
+	Port               int
+	BaseURL            string
+	DatabaseURL        string
+	GitHubClientID     string
 	GitHubClientSecret string
-	EncryptionKey     []byte // 32 bytes for AES-256
-	SessionSecret     []byte // 32 bytes for securecookie
-	LogLevel          string
-	SessionMaxAge     int // seconds
+	EncryptionKey      []byte // 32 bytes for AES-256
+	SessionSecret      []byte // 32 bytes for securecookie
+	LogLevel           string
+	SessionMaxAge      int // seconds
+}
+
+// buildDatabaseURL returns DATABASE_URL if set, otherwise constructs one
+// from individual DB_* environment variables.
+func buildDatabaseURL() (string, error) {
+	if v := os.Getenv("DATABASE_URL"); v != "" {
+		return v, nil
+	}
+
+	host := os.Getenv("DB_HOST")
+	user := os.Getenv("DB_USER")
+	password := os.Getenv("DB_PASSWORD")
+	name := os.Getenv("DB_NAME")
+
+	if host == "" || user == "" || name == "" {
+		return "", fmt.Errorf("either DATABASE_URL or DB_HOST, DB_USER, and DB_NAME are required")
+	}
+
+	port := getenv("DB_PORT", "5432")
+	sslmode := getenv("DB_SSLMODE", "disable")
+
+	if password != "" {
+		return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
+			user, password, host, port, name, sslmode), nil
+	}
+	return fmt.Sprintf("postgres://%s@%s:%s/%s?sslmode=%s",
+		user, host, port, name, sslmode), nil
 }
 
 func Load() (*Config, error) {
@@ -54,20 +81,21 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 
+	dbURL, err := buildDatabaseURL()
+	if err != nil {
+		return nil, err
+	}
+
 	cfg := &Config{
 		Port:               port,
 		BaseURL:            getenv("BASE_URL", fmt.Sprintf("http://localhost:%d", port)),
-		DatabaseURL:        requireEnv("DATABASE_URL"),
+		DatabaseURL:        dbURL,
 		GitHubClientID:     requireEnv("GITHUB_CLIENT_ID"),
 		GitHubClientSecret: requireEnv("GITHUB_CLIENT_SECRET"),
 		EncryptionKey:      encKey,
 		SessionSecret:      sessKey,
 		LogLevel:           getenv("LOG_LEVEL", "info"),
 		SessionMaxAge:      sessionMaxAge,
-	}
-
-	if cfg.DatabaseURL == "" {
-		return nil, fmt.Errorf("DATABASE_URL is required")
 	}
 	if cfg.GitHubClientID == "" {
 		return nil, fmt.Errorf("GITHUB_CLIENT_ID is required")
