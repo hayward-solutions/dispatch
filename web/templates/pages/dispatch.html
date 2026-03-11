@@ -34,7 +34,7 @@
                 <svg class="w-4 h-4 text-text-muted transition-transform group-open:rotate-90" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
             </summary>
             <div class="px-4 py-4 border-t border-border-subtle bg-surface-base/50">
-                <form hx-post="/htmx/repos/{{$.Repo.Owner}}/{{$.Repo.Name}}/dispatch"
+                <form hx-post="/repos/{{$.Repo.Owner}}/{{$.Repo.Name}}/dispatch"
                       hx-swap="none"
                       class="space-y-3">
                     <input type="hidden" name="workflow_id" value="{{.ID}}">

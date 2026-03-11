@@ -4,7 +4,7 @@
 {{else}}
 <div class="pl-8 pr-4 pb-3 space-y-1.5"
      {{if .InProgress}}
-     hx-get="/htmx/repos/{{.Owner}}/{{.Name}}/runs/{{.RunID}}/jobs"
+     hx-get="/repos/{{.Owner}}/{{.Name}}/runs/{{.RunID}}/jobs"
      hx-trigger="every 10s"
      hx-target="this"
      hx-swap="outerHTML"
@@ -19,7 +19,7 @@
             {{end}}
             {{if eq .Status "completed"}}
             <button class="btn btn-ghost btn-sm text-[11px]"
-                    hx-get="/htmx/repos/{{$.Owner}}/{{$.Name}}/jobs/{{.ID}}/log"
+                    hx-get="/repos/{{$.Owner}}/{{$.Name}}/jobs/{{.ID}}/log"
                     hx-target="next .job-log-container"
                     hx-swap="innerHTML">Logs</button>
             {{end}}

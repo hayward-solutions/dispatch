@@ -14,13 +14,13 @@
             <svg class="w-3.5 h-3.5 text-text-muted transition-transform group-open:rotate-90 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </summary>
         <div class="px-4 py-4 border-t border-border-subtle bg-surface-base/50">
-            <form hx-post="/htmx/repos/{{$.Owner}}/{{$.Name}}/dispatch"
+            <form hx-post="/repos/{{$.Owner}}/{{$.Name}}/dispatch"
                   hx-swap="none"
                   class="space-y-3">
                 <input type="hidden" name="workflow_id" value="{{.ID}}">
                 <div>
                     <label class="block text-[11px] font-medium text-text-muted uppercase tracking-wider mb-1">Branch / Tag</label>
-                    <div hx-get="/htmx/repos/{{$.Owner}}/{{$.Name}}/refs"
+                    <div hx-get="/repos/{{$.Owner}}/{{$.Name}}/refs"
                          hx-trigger="revealed"
                          hx-target="this"
                          hx-swap="innerHTML">

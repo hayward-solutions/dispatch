@@ -32,7 +32,7 @@
         </summary>
         {{if .RunID}}
         <div class="border-t border-border-subtle bg-surface-base/30"
-             hx-get="/htmx/repos/{{$.Owner}}/{{$.Name}}/runs/{{.RunID}}/jobs"
+             hx-get="/repos/{{$.Owner}}/{{$.Name}}/runs/{{.RunID}}/jobs"
              hx-trigger="revealed"
              hx-target="this"
              hx-swap="innerHTML">
