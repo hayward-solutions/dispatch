@@ -107,6 +107,16 @@ func run() error {
 	}
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
 
+	// Health check
+	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
+		if err := db.Pool.Ping(r.Context()); err != nil {
+			http.Error(w, "db unreachable", http.StatusServiceUnavailable)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
+	})
+
 	// Public routes
 	mux.HandleFunc("GET /login", authHandler.LoginPage)
 	mux.HandleFunc("GET /auth/github", authHandler.BeginOAuth)
