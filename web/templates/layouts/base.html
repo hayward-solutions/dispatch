@@ -11,14 +11,21 @@
 <body hx-boost="true">
     {{if .User}}
     <div class="flex h-screen overflow-hidden">
+        <!-- Mobile sidebar backdrop -->
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden" onclick="toggleSidebar()"></div>
         {{template "sidebar" .}}
         <div class="flex-1 flex flex-col overflow-hidden">
             <header class="h-12 border-b border-border-subtle flex items-center justify-between px-6 shrink-0 bg-surface-base">
-                {{block "topbar" .}}<div></div>{{end}}
+                <div class="flex items-center gap-2">
+                    <button onclick="toggleSidebar()" class="btn-icon md:hidden" aria-label="Toggle menu">
+                        {{template "icon-menu" .}}
+                    </button>
+                    {{block "topbar" .}}<div></div>{{end}}
+                </div>
                 <button onclick="document.getElementById('command-palette').showModal()" class="btn-ghost btn-sm flex items-center gap-2 text-text-muted">
                     {{template "icon-search" .}}
-                    <span>Search</span>
-                    <kbd class="text-[11px] bg-surface-2 px-1.5 py-0.5 rounded border border-border-subtle">&#8984;K</kbd>
+                    <span class="hidden sm:inline">Search</span>
+                    <kbd class="hidden sm:inline text-[11px] bg-surface-2 px-1.5 py-0.5 rounded border border-border-subtle">&#8984;K</kbd>
                 </button>
             </header>
             <main class="flex-1 overflow-y-auto p-6" id="main-content">
