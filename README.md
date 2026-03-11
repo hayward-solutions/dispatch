@@ -79,29 +79,16 @@ make clean      # Remove build artifacts
 
 ## Deployment
 
-### Docker
+For full deployment instructions including GitHub OAuth App setup, reverse proxy configuration, and troubleshooting, see [DEPLOYMENT.md](DEPLOYMENT.md).
 
-```bash
-# Build CSS first (it gets embedded in the binary)
-make css
-
-# Build the container
-docker build -t dispatch .
-
-# Run
-docker run -p 8080:8080 --env-file .env dispatch
-```
-
-### Docker Compose
+### Quick Start with Docker Compose
 
 ```bash
 cp .env.example .env
-# Edit .env with your configuration
+# Edit .env with your configuration (see DEPLOYMENT.md)
 
 docker compose up -d
 ```
-
-The compose file starts both PostgreSQL and the Dispatch server. The `DATABASE_URL` is automatically configured to use the internal Docker network.
 
 ## Architecture
 
