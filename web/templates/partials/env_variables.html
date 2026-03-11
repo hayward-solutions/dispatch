@@ -1,0 +1,31 @@
+{{define "env_variables.html"}}
+{{if .Error}}
+<p class="text-sm text-status-failure p-4">{{.Error}}</p>
+{{else if .Variables}}
+<div class="divide-y divide-border-subtle">
+    {{range .Variables}}
+    <div class="flex items-center gap-3 px-4 py-2.5 group hover:bg-surface-hover transition-colors" id="var-{{.Name}}">
+        <div class="flex-1 min-w-0">
+            <span class="text-[13px] text-text-primary font-mono">{{.Name}}</span>
+        </div>
+        <div class="flex-1 min-w-0">
+            <input type="text" value="{{.Value}}" name="value"
+                   class="w-full bg-transparent text-[13px] text-text-secondary font-mono outline-none focus:text-text-primary border-b border-transparent focus:border-accent"
+                   hx-put="/htmx/repos/{{$.Owner}}/{{$.Name}}/environments/{{$.EnvName}}/variables/{{.Name}}"
+                   hx-trigger="change"
+                   hx-swap="none"
+                   hx-include="this">
+        </div>
+        <button class="btn-icon opacity-0 group-hover:opacity-100 transition-opacity text-status-failure"
+                hx-delete="/htmx/repos/{{$.Owner}}/{{$.Name}}/environments/{{$.EnvName}}/variables/{{.Name}}"
+                hx-swap="none"
+                hx-confirm="Delete variable {{.Name}}?">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+        </button>
+    </div>
+    {{end}}
+</div>
+{{else}}
+<p class="text-sm text-text-muted p-4">No variables configured.</p>
+{{end}}
+{{end}}

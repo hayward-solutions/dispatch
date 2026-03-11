@@ -1,0 +1,47 @@
+{{define "sidebar"}}
+<aside class="w-60 bg-surface-1 border-r border-border-subtle flex flex-col shrink-0 overflow-hidden">
+    <!-- Logo -->
+    <div class="h-12 flex items-center gap-2 px-4 border-b border-border-subtle shrink-0">
+        <span class="text-accent">{{template "icon-dispatch" .}}</span>
+        <span class="font-semibold text-[14px] text-text-primary">Dispatch</span>
+    </div>
+
+    <!-- Nav -->
+    <nav class="px-2 py-3 space-y-0.5">
+        <a href="/repos" class="sidebar-link {{if eq .ActivePage "repos"}}active{{end}}">
+            {{template "icon-repos" .}}
+            <span>Repositories</span>
+        </a>
+    </nav>
+
+    <!-- Tracked Repos -->
+    <div class="border-t border-border-subtle px-2 py-2">
+        <div class="px-3 py-1 text-[11px] font-medium text-text-muted uppercase tracking-wider">Tracked</div>
+        <div hx-get="/htmx/sidebar/repos"
+             hx-trigger="load, refreshSidebar from:body"
+             hx-target="this"
+             hx-swap="innerHTML"
+             hx-disinherit="hx-target hx-swap"
+             class="space-y-0.5">
+            <div class="px-3 py-1"><div class="skeleton h-3 w-3/4 rounded"></div></div>
+        </div>
+    </div>
+
+    <div class="flex-1"></div>
+
+    <!-- User -->
+    <div class="border-t border-border-subtle px-3 py-2.5 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2 min-w-0">
+            {{if .User.AvatarURL}}
+            <img src="{{.User.AvatarURL}}" alt="" class="w-6 h-6 rounded-full shrink-0">
+            {{end}}
+            <span class="text-[13px] text-text-secondary truncate">{{.User.Login}}</span>
+        </div>
+        <form method="POST" action="/auth/logout" hx-boost="false">
+            <button type="submit" class="btn-icon" title="Logout">
+                {{template "icon-logout" .}}
+            </button>
+        </form>
+    </div>
+</aside>
+{{end}}

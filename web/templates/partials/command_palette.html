@@ -1,0 +1,14 @@
+{{define "command_palette"}}
+<dialog id="command-palette" class="command-palette">
+    <div class="command-palette-inner">
+        <input type="search"
+               placeholder="Search repositories, workflows..."
+               hx-get="/htmx/repos/search"
+               hx-trigger="input changed delay:200ms"
+               hx-target="#command-results"
+               name="q"
+               autofocus>
+        <div id="command-results" class="max-h-80 overflow-y-auto"></div>
+    </div>
+</dialog>
+{{end}}

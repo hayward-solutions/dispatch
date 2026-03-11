@@ -1,0 +1,107 @@
+{{define "title"}}Dispatch - {{.Repo.FullName}} / {{.EnvName}}{{end}}
+
+{{define "content"}}
+<div class="mb-6">
+    <div class="flex items-center gap-2 text-sm text-text-muted mb-1">
+        <a href="/repos" class="hover:text-text-primary">Repositories</a>
+        <span>/</span>
+        <a href="/repos/{{.Repo.Owner}}/{{.Repo.Name}}" class="hover:text-text-primary">{{.Repo.FullName}}</a>
+        <span>/</span>
+        <span class="text-text-primary">{{.EnvName}}</span>
+    </div>
+    <div class="flex items-center gap-2">
+        {{template "icon-environment" .}}
+        <h1 class="text-lg font-semibold text-text-primary flex-1">{{.EnvName}}</h1>
+        <button class="btn btn-danger btn-sm"
+                hx-delete="/htmx/repos/{{.Repo.Owner}}/{{.Repo.Name}}/environments/{{.EnvName}}"
+                hx-swap="none"
+                hx-confirm="Delete environment '{{.EnvName}}'? This cannot be undone.">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            Delete
+        </button>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <!-- Left column: Dispatch, Variables, Secrets -->
+    <div class="flex flex-col gap-4">
+        <div class="panel">
+            <div class="px-4 py-3 border-b border-border-subtle flex items-center gap-2">
+                {{template "icon-dispatch" .}}
+                <h2 class="text-sm font-medium text-text-primary">Run Workflow</h2>
+            </div>
+            <div hx-get="/htmx/repos/{{.Repo.Owner}}/{{.Repo.Name}}/environments/{{.EnvName}}/dispatch"
+                 hx-trigger="load"
+                 hx-target="this"
+                 hx-disinherit="hx-target hx-swap">
+                <div class="p-4"><div class="skeleton h-4 w-3/4 mb-2"></div><div class="skeleton h-4 w-1/2"></div></div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <span>Variables</span>
+                <button class="btn-icon" onclick="document.getElementById('add-var-form').classList.toggle('hidden')">
+                    {{template "icon-plus" .}}
+                </button>
+            </div>
+            <div id="add-var-form" class="hidden border-b border-border-subtle">
+                <form hx-post="/htmx/repos/{{.Repo.Owner}}/{{.Repo.Name}}/environments/{{.EnvName}}/variables"
+                      hx-swap="none"
+                      class="flex items-center gap-2 px-4 py-2.5">
+                    <input type="text" name="name" placeholder="NAME" required
+                           class="flex-1 bg-surface-2 border border-border-default rounded px-2 py-1 text-[13px] text-text-primary placeholder:text-text-muted outline-none focus:border-accent">
+                    <input type="text" name="value" placeholder="value"
+                           class="flex-1 bg-surface-2 border border-border-default rounded px-2 py-1 text-[13px] text-text-primary placeholder:text-text-muted outline-none focus:border-accent">
+                    <button type="submit" class="btn btn-primary btn-sm">Add</button>
+                </form>
+            </div>
+            <div hx-get="/htmx/repos/{{.Repo.Owner}}/{{.Repo.Name}}/environments/{{.EnvName}}/variables"
+                 hx-trigger="load, refreshEnvVars from:body"
+                 hx-target="this"
+                 hx-disinherit="hx-target hx-swap">
+                <div class="p-4"><div class="skeleton h-4 w-3/4 mb-2"></div><div class="skeleton h-4 w-1/2"></div></div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <span>Secrets</span>
+                <button class="btn-icon" onclick="document.getElementById('add-secret-form').classList.toggle('hidden')">
+                    {{template "icon-plus" .}}
+                </button>
+            </div>
+            <div id="add-secret-form" class="hidden border-b border-border-subtle">
+                <form hx-post="/htmx/repos/{{.Repo.Owner}}/{{.Repo.Name}}/environments/{{.EnvName}}/secrets"
+                      hx-swap="none"
+                      class="flex items-center gap-2 px-4 py-2.5">
+                    <input type="text" name="name" placeholder="SECRET_NAME" required
+                           class="flex-1 bg-surface-2 border border-border-default rounded px-2 py-1 text-[13px] text-text-primary placeholder:text-text-muted outline-none focus:border-accent">
+                    <input type="password" name="value" placeholder="secret value" required
+                           class="flex-1 bg-surface-2 border border-border-default rounded px-2 py-1 text-[13px] text-text-primary placeholder:text-text-muted outline-none focus:border-accent">
+                    <button type="submit" class="btn btn-primary btn-sm">Add</button>
+                </form>
+            </div>
+            <div hx-get="/htmx/repos/{{.Repo.Owner}}/{{.Repo.Name}}/environments/{{.EnvName}}/secrets"
+                 hx-trigger="load, refreshEnvSecrets from:body"
+                 hx-target="this"
+                 hx-disinherit="hx-target hx-swap">
+                <div class="p-4"><div class="skeleton h-4 w-3/4 mb-2"></div><div class="skeleton h-4 w-1/2"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right column: Deployments -->
+    <div class="panel h-fit lg:col-span-2">
+        <div class="px-4 py-3 border-b border-border-subtle flex items-center gap-2">
+            {{template "icon-workflow" .}}
+            <h2 class="text-sm font-medium text-text-primary">Deployments</h2>
+        </div>
+        <div hx-get="/htmx/repos/{{.Repo.Owner}}/{{.Repo.Name}}/environments/{{.EnvName}}/deployments"
+             hx-trigger="load"
+             hx-target="this">
+            <div class="p-4"><div class="skeleton h-4 w-3/4 mb-2"></div><div class="skeleton h-4 w-1/2"></div></div>
+        </div>
+    </div>
+</div>
+{{end}}

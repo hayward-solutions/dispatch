@@ -1,0 +1,45 @@
+{{define "run_jobs.html"}}
+{{if .Error}}
+<p class="text-sm text-status-failure px-4 py-2">{{.Error}}</p>
+{{else}}
+<div class="pl-8 pr-4 pb-3 space-y-1.5"
+     {{if .InProgress}}
+     hx-get="/htmx/repos/{{.Owner}}/{{.Name}}/runs/{{.RunID}}/jobs"
+     hx-trigger="every 10s"
+     hx-target="this"
+     hx-swap="outerHTML"
+     {{end}}>
+    {{range .Jobs}}
+    <div class="rounded bg-surface-2 border border-border-subtle overflow-hidden">
+        <div class="flex items-center gap-2 px-3 py-2">
+            <span class="status-dot {{if eq .Conclusion "success"}}bg-status-success{{else if eq .Conclusion "failure"}}bg-status-failure{{else if eq .Status "in_progress"}}bg-status-running{{else if eq .Conclusion "cancelled"}}bg-text-muted{{else}}bg-status-pending{{end}}"></span>
+            <span class="text-[13px] text-text-primary flex-1">{{.Name}}</span>
+            {{if and (not .StartedAt.IsZero) (not .CompletedAt.IsZero)}}
+            <span class="text-[11px] text-text-muted">{{duration .StartedAt .CompletedAt}}</span>
+            {{end}}
+            {{if eq .Status "completed"}}
+            <button class="btn btn-ghost btn-sm text-[11px]"
+                    hx-get="/htmx/repos/{{$.Owner}}/{{$.Name}}/jobs/{{.ID}}/log"
+                    hx-target="next .job-log-container"
+                    hx-swap="innerHTML">Logs</button>
+            {{end}}
+        </div>
+        {{if .Steps}}
+        <div class="border-t border-border-subtle px-3 py-1.5 space-y-0.5">
+            {{range .Steps}}
+            <div class="flex items-center gap-2 text-[11px]">
+                <span class="w-1 h-1 rounded-full shrink-0 {{if eq .Conclusion "success"}}bg-status-success{{else if eq .Conclusion "failure"}}bg-status-failure{{else if eq .Status "in_progress"}}bg-status-running{{else if eq .Conclusion "skipped"}}bg-text-muted{{else}}bg-status-pending{{end}}"></span>
+                <span class="text-text-secondary flex-1 truncate">{{.Name}}</span>
+                {{if and (not .StartedAt.IsZero) (not .CompletedAt.IsZero)}}
+                <span class="text-text-muted shrink-0">{{duration .StartedAt .CompletedAt}}</span>
+                {{end}}
+            </div>
+            {{end}}
+        </div>
+        {{end}}
+        <div class="job-log-container"></div>
+    </div>
+    {{end}}
+</div>
+{{end}}
+{{end}}

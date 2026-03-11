@@ -1,0 +1,15 @@
+{{define "repo_list.html"}}
+{{if .Repos}}
+<div class="panel" id="repo-list-panel">
+    {{range .Repos}}
+    <div id="repo-{{.Owner}}-{{.Name}}" data-repo-name="{{.Name}}" data-repo-desc="{{.Description}}" class="border-t border-border-subtle first:border-t-0">
+        {{template "repo_card.html" dict "Repo" . "Tracked" (index $.TrackedSet .FullName)}}
+    </div>
+    {{end}}
+</div>
+{{else}}
+<div class="panel p-6 text-center">
+    <p class="text-sm text-text-muted">No repositories found.</p>
+</div>
+{{end}}
+{{end}}

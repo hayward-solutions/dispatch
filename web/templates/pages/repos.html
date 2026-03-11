@@ -1,0 +1,47 @@
+{{define "title"}}Dispatch - Repositories{{end}}
+
+{{define "content"}}
+<div class="mb-6 flex items-center justify-between">
+    <div>
+        <h1 class="text-lg font-semibold text-text-primary">Repositories</h1>
+        <p class="text-sm text-text-muted">Browse and track your GitHub repositories</p>
+    </div>
+</div>
+
+<div class="mb-4 relative">
+    <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+        {{template "icon-search" .}}
+    </div>
+    <input type="search" id="repo-search"
+           placeholder="Search repositories..."
+           class="w-full bg-surface-2 border border-border-default rounded-md pl-10 pr-4 py-2 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent">
+</div>
+
+<div id="repo-results">
+    {{template "repo_list.html" .}}
+</div>
+
+<script>
+(function() {
+    var input = document.getElementById('repo-search');
+    if (!input) return;
+    input.addEventListener('input', function() {
+        var q = this.value.toLowerCase();
+        var cards = document.querySelectorAll('#repo-results [data-repo-name]');
+        var first = true;
+        for (var i = 0; i < cards.length; i++) {
+            var el = cards[i];
+            var name = el.getAttribute('data-repo-name').toLowerCase();
+            var desc = (el.getAttribute('data-repo-desc') || '').toLowerCase();
+            var match = name.indexOf(q) !== -1 || desc.indexOf(q) !== -1;
+            el.style.display = match ? '' : 'none';
+            if (match) {
+                el.classList.toggle('border-t-0', first);
+                el.classList.toggle('border-t', !first);
+                first = false;
+            }
+        }
+    });
+})();
+</script>
+{{end}}

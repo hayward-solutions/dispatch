@@ -1,0 +1,37 @@
+{{define "base"}}<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="view-transition" content="same-origin">
+    <title>{{block "title" .}}Dispatch{{end}}</title>
+    <link rel="stylesheet" href="/static/css/app.css">
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+</head>
+<body hx-boost="true">
+    {{if .User}}
+    <div class="flex h-screen overflow-hidden">
+        {{template "sidebar" .}}
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <header class="h-12 border-b border-border-subtle flex items-center justify-between px-6 shrink-0 bg-surface-base">
+                {{block "topbar" .}}<div></div>{{end}}
+                <button onclick="document.getElementById('command-palette').showModal()" class="btn-ghost btn-sm flex items-center gap-2 text-text-muted">
+                    {{template "icon-search" .}}
+                    <span>Search</span>
+                    <kbd class="text-[11px] bg-surface-2 px-1.5 py-0.5 rounded border border-border-subtle">&#8984;K</kbd>
+                </button>
+            </header>
+            <main class="flex-1 overflow-y-auto p-6" id="main-content">
+                <div id="toast-container"></div>
+                {{block "content" .}}{{end}}
+            </main>
+        </div>
+    </div>
+    {{template "command_palette" .}}
+    {{else}}
+    <div id="toast-container"></div>
+    {{block "content" .}}{{end}}
+    {{end}}
+    <script src="/static/js/app.js"></script>
+</body>
+</html>{{end}}

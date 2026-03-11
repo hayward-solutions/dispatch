@@ -1,0 +1,14 @@
+{{define "sidebar_repos.html"}}
+{{if .Repos}}
+{{range .Repos}}
+<a href="/repos/{{.RepoOwner}}/{{.RepoName}}" hx-boost="false" class="sidebar-link">
+    <span class="status-dot bg-status-success"></span>
+    <span class="truncate">{{.RepoName}}</span>
+</a>
+{{end}}
+{{else}}
+<div class="px-3 py-2 text-[12px] text-text-muted">
+    No tracked repos
+</div>
+{{end}}
+{{end}}

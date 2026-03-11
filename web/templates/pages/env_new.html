@@ -1,0 +1,143 @@
+{{define "title"}}Dispatch - {{.Repo.FullName}} / New Environment{{end}}
+
+{{define "content"}}
+<div class="mb-6">
+    <div class="flex items-center gap-2 text-sm text-text-muted mb-1">
+        <a href="/repos" class="hover:text-text-primary">Repositories</a>
+        <span>/</span>
+        <a href="/repos/{{.Repo.Owner}}/{{.Repo.Name}}" class="hover:text-text-primary">{{.Repo.FullName}}</a>
+        <span>/</span>
+        <span class="text-text-primary">New Environment</span>
+    </div>
+    <div class="flex items-center gap-2">
+        {{template "icon-environment" .}}
+        <h1 class="text-lg font-semibold text-text-primary">Create Environment</h1>
+    </div>
+</div>
+
+<form id="env-create-form"
+      hx-post="/htmx/repos/{{.Repo.Owner}}/{{.Repo.Name}}/environments"
+      hx-swap="none"
+      class="flex flex-col gap-4 max-w-2xl">
+
+    <div class="panel">
+        <div class="panel-header">
+            <span>Environment</span>
+        </div>
+        <div class="panel-body flex flex-col gap-3">
+            <div>
+                <label class="block text-[11px] font-medium text-text-muted uppercase tracking-wider mb-1">Name</label>
+                <input type="text" name="name" placeholder="e.g. production, staging, development" required autofocus
+                       class="w-full bg-surface-2 border border-border-default rounded px-3 py-1.5 text-[13px] text-text-primary placeholder:text-text-muted outline-none focus:border-accent">
+            </div>
+            {{if .Environments}}
+            <div>
+                <label class="block text-[11px] font-medium text-text-muted uppercase tracking-wider mb-1">Copy from</label>
+                <select id="copy-from-select"
+                        class="w-full bg-surface-2 border border-border-default rounded px-3 py-1.5 text-[13px] text-text-primary outline-none focus:border-accent">
+                    <option value="">Don't copy</option>
+                    {{range .Environments}}
+                    <option value="{{.Name}}">{{.Name}}</option>
+                    {{end}}
+                </select>
+            </div>
+            {{end}}
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header">
+            <span>Variables</span>
+            <button type="button" class="btn-icon" onclick="addRow('var')">
+                {{template "icon-plus" .}}
+            </button>
+        </div>
+        <div class="divide-y divide-border-subtle" id="var-rows"></div>
+        <p class="text-[11px] text-text-muted px-4 py-2.5" id="var-empty">No variables added yet.</p>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header">
+            <span>Secrets</span>
+            <button type="button" class="btn-icon" onclick="addRow('secret')">
+                {{template "icon-plus" .}}
+            </button>
+        </div>
+        <div class="divide-y divide-border-subtle" id="secret-rows"></div>
+        <p class="text-[11px] text-text-muted px-4 py-2.5" id="secret-empty">No secrets added yet.</p>
+    </div>
+
+    <div class="flex items-center gap-2">
+        <button type="submit" class="btn btn-primary">Create Environment</button>
+        <a href="/repos/{{.Repo.Owner}}/{{.Repo.Name}}" class="btn btn-ghost">Cancel</a>
+    </div>
+</form>
+
+<script>
+(function() {
+    const removeIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+    const inputClass = 'flex-1 bg-surface-2 border border-border-default rounded px-2 py-1 text-[13px] text-text-primary placeholder:text-text-muted outline-none focus:border-accent';
+
+    window.addRow = function(type, nameVal, valueVal) {
+        const container = document.getElementById(type + '-rows');
+        const empty = document.getElementById(type + '-empty');
+        if (empty) empty.style.display = 'none';
+
+        const isSecret = type === 'secret';
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-2 px-4 py-2.5';
+        row.innerHTML =
+            '<input type="text" name="' + (isSecret ? 'secret_names' : 'var_names') + '" placeholder="' + (isSecret ? 'SECRET_NAME' : 'VARIABLE_NAME') + '" required class="' + inputClass + '" value="' + escapeAttr(nameVal || '') + '">' +
+            '<input type="' + (isSecret ? 'password' : 'text') + '" name="' + (isSecret ? 'secret_values' : 'var_values') + '" placeholder="' + (isSecret ? 'secret value (required)' : 'value') + '" ' + (isSecret ? 'required ' : '') + 'class="' + inputClass + '" value="' + escapeAttr(valueVal || '') + '">' +
+            '<button type="button" class="btn-icon text-status-failure" onclick="removeRow(this, \'' + type + '\')">' + removeIcon + '</button>';
+
+        container.appendChild(row);
+        if (!nameVal) row.querySelector('input').focus();
+    };
+
+    window.removeRow = function(btn, type) {
+        const container = document.getElementById(type + '-rows');
+        btn.closest('.flex').remove();
+        if (container.children.length === 0) {
+            document.getElementById(type + '-empty').style.display = '';
+        }
+    };
+
+    function escapeAttr(s) {
+        return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function clearRows(type) {
+        document.getElementById(type + '-rows').innerHTML = '';
+        document.getElementById(type + '-empty').style.display = '';
+    }
+
+    const copySelect = document.getElementById('copy-from-select');
+    if (copySelect) {
+        copySelect.addEventListener('change', function() {
+            const env = this.value;
+            if (!env) {
+                clearRows('var');
+                clearRows('secret');
+                return;
+            }
+
+            fetch('/htmx/repos/{{.Repo.Owner}}/{{.Repo.Name}}/environments/' + encodeURIComponent(env) + '/export')
+                .then(r => r.json())
+                .then(data => {
+                    clearRows('var');
+                    clearRows('secret');
+
+                    if (data.variables) {
+                        data.variables.forEach(v => addRow('var', v.name, v.value));
+                    }
+                    if (data.secrets) {
+                        data.secrets.forEach(name => addRow('secret', name, ''));
+                    }
+                })
+                .catch(err => console.error('Failed to load environment config:', err));
+        });
+    }
+})();
+</script>
+{{end}}

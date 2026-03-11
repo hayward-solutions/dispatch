@@ -1,0 +1,18 @@
+{{define "env_list.html"}}
+{{if .Error}}
+<p class="text-sm text-status-failure p-4">{{.Error}}</p>
+{{else if .Environments}}
+<div class="divide-y divide-border-subtle">
+    {{range .Environments}}
+    <a href="/repos/{{$.Owner}}/{{$.Name}}/environments/{{.Name}}"
+       class="px-4 py-2.5 hover:bg-surface-hover transition-colors flex items-center gap-2 no-underline group">
+        <span class="status-dot bg-status-success"></span>
+        <span class="text-sm text-text-primary flex-1 group-hover:text-accent">{{.Name}}</span>
+        <svg class="w-3.5 h-3.5 text-text-muted" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </a>
+    {{end}}
+</div>
+{{else}}
+<p class="text-sm text-text-muted p-4">No environments configured.</p>
+{{end}}
+{{end}}

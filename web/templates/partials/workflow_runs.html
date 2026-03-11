@@ -1,0 +1,45 @@
+{{define "workflow_runs.html"}}
+{{if .Error}}
+<p class="text-sm text-status-failure p-4">{{.Error}}</p>
+{{else if .Runs}}
+<div class="divide-y divide-border-subtle">
+    {{range .Runs}}
+    <details class="group">
+        <summary class="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-hover transition-colors cursor-pointer list-none">
+            <span class="status-dot {{if eq .Conclusion "success"}}bg-status-success{{else if eq .Conclusion "failure"}}bg-status-failure{{else if eq .Status "in_progress"}}bg-status-running{{else if eq .Conclusion "cancelled"}}bg-text-muted{{else}}bg-status-pending{{end}}"></span>
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                    <span class="text-sm text-text-primary truncate">{{.DisplayTitle}}</span>
+                </div>
+                <div class="flex items-center gap-2 text-[11px] text-text-muted mt-0.5">
+                    <span>{{.Name}}</span>
+                    <span>&middot;</span>
+                    <span>#{{.RunNumber}}</span>
+                    <span>&middot;</span>
+                    <span>{{.HeadBranch}}</span>
+                    {{if .Actor}}
+                    <span>&middot;</span>
+                    <span>{{.Actor}}</span>
+                    {{end}}
+                </div>
+            </div>
+            <a href="{{.HTMLURL}}" target="_blank" hx-boost="false" class="btn-icon shrink-0 z-10" onclick="event.stopPropagation();" title="View on GitHub">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </a>
+            <span class="text-[11px] text-text-muted shrink-0">{{.Event}}</span>
+            <svg class="w-3.5 h-3.5 text-text-muted transition-transform group-open:rotate-90 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </summary>
+        <div class="border-t border-border-subtle bg-surface-base/30"
+             hx-get="/htmx/repos/{{$.Owner}}/{{$.Name}}/runs/{{.ID}}/jobs"
+             hx-trigger="revealed"
+             hx-target="this"
+             hx-swap="innerHTML">
+            <div class="p-4"><div class="skeleton h-4 w-3/4 mb-2"></div><div class="skeleton h-4 w-1/2"></div></div>
+        </div>
+    </details>
+    {{end}}
+</div>
+{{else}}
+<p class="text-sm text-text-muted p-4">No workflow runs found.</p>
+{{end}}
+{{end}}

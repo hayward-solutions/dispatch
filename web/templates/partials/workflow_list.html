@@ -1,0 +1,31 @@
+{{define "workflow_list.html"}}
+{{if .Error}}
+<p class="text-sm text-status-failure">{{.Error}}</p>
+{{else if .Workflows}}
+<div class="divide-y divide-border-subtle -mx-4">
+    {{range .Workflows}}
+    <div class="px-4 py-3 hover:bg-surface-hover transition-colors">
+        <div class="flex items-center justify-between mb-1">
+            <span class="text-sm font-medium text-text-primary">{{.Name}}</span>
+            {{if .Inputs}}
+            <span class="badge bg-surface-3 text-text-muted">{{len .Inputs}} input{{if gt (len .Inputs) 1}}s{{end}}</span>
+            {{end}}
+        </div>
+        <p class="text-xs text-text-muted">{{.Path}}</p>
+        {{if .Inputs}}
+        <div class="mt-2 flex flex-wrap gap-1.5">
+            {{range .Inputs}}
+            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-surface-3 text-[11px] text-text-secondary">
+                {{.Name}}{{if .Required}}<span class="text-status-failure">*</span>{{end}}
+                <span class="text-text-muted">({{.Type}})</span>
+            </span>
+            {{end}}
+        </div>
+        {{end}}
+    </div>
+    {{end}}
+</div>
+{{else}}
+<p class="text-sm text-text-muted">No dispatchable workflows found.</p>
+{{end}}
+{{end}}

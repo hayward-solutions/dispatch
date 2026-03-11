@@ -1,0 +1,27 @@
+{{define "title"}}Dispatch - Dashboard{{end}}
+
+{{define "content"}}
+<div class="mb-6">
+    <h1 class="text-lg font-semibold text-text-primary">Dashboard</h1>
+    <p class="text-sm text-text-muted">Your tracked repositories</p>
+</div>
+
+{{if .Repos}}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    {{range .Repos}}
+    <a href="/repos/{{.RepoOwner}}/{{.RepoName}}" class="panel p-4 hover:bg-surface-hover transition-colors block no-underline group">
+        <div class="flex items-start justify-between mb-2">
+            <span class="text-sm font-medium text-text-primary group-hover:text-accent">{{.RepoFullName}}</span>
+            <svg class="w-4 h-4 text-text-muted" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
+        </div>
+        <p class="text-xs text-text-muted">Tracked since {{.AddedAt.Format "Jan 2, 2006"}}</p>
+    </a>
+    {{end}}
+</div>
+{{else}}
+<div class="panel p-8 text-center">
+    <p class="text-text-muted mb-4">No repositories tracked yet.</p>
+    <a href="/repos" class="btn btn-primary">Browse Repositories</a>
+</div>
+{{end}}
+{{end}}

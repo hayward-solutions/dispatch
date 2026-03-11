@@ -1,0 +1,94 @@
+{{define "title"}}Dispatch - {{.Repo.FullName}} / {{.EnvName}} / Run Workflow{{end}}
+
+{{define "content"}}
+<div class="mb-6">
+    <div class="flex items-center gap-2 text-sm text-text-muted mb-1">
+        <a href="/repos" class="hover:text-text-primary">Repositories</a>
+        <span>/</span>
+        <a href="/repos/{{.Repo.Owner}}/{{.Repo.Name}}" class="hover:text-text-primary">{{.Repo.FullName}}</a>
+        <span>/</span>
+        <a href="/repos/{{.Repo.Owner}}/{{.Repo.Name}}/environments/{{.EnvName}}" class="hover:text-text-primary">{{.EnvName}}</a>
+        <span>/</span>
+        <span class="text-text-primary">Run Workflow</span>
+    </div>
+    <div class="flex items-center gap-2">
+        {{template "icon-dispatch" .}}
+        <h1 class="text-lg font-semibold text-text-primary">Run Workflow</h1>
+    </div>
+</div>
+
+{{if .Workflows}}
+<div class="panel max-w-2xl">
+    <div class="panel-header">
+        <span>Select Workflow</span>
+    </div>
+    <div class="divide-y divide-border-subtle">
+        {{range .Workflows}}
+        <details class="group">
+            <summary class="flex items-center gap-3 px-4 py-3 hover:bg-surface-hover transition-colors cursor-pointer list-none">
+                {{template "icon-workflow" $}}
+                <div class="flex-1 min-w-0">
+                    <span class="text-[13px] text-text-primary">{{.Name}}</span>
+                    <span class="text-[11px] text-text-muted ml-2">{{.Path}}</span>
+                </div>
+                <svg class="w-4 h-4 text-text-muted transition-transform group-open:rotate-90" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </summary>
+            <div class="px-4 py-4 border-t border-border-subtle bg-surface-base/50">
+                <form hx-post="/htmx/repos/{{$.Repo.Owner}}/{{$.Repo.Name}}/dispatch"
+                      hx-swap="none"
+                      class="space-y-3">
+                    <input type="hidden" name="workflow_id" value="{{.ID}}">
+                    <div>
+                        <label class="block text-[11px] font-medium text-text-muted uppercase tracking-wider mb-1">Branch / Ref</label>
+                        <input type="text" name="ref" value="main" required
+                               class="w-full bg-surface-2 border border-border-default rounded px-3 py-1.5 text-[13px] text-text-primary outline-none focus:border-accent">
+                    </div>
+                    {{range .Inputs}}
+                    <div>
+                        <label class="block text-[11px] font-medium text-text-muted uppercase tracking-wider mb-1">
+                            {{.Name}}
+                            {{if .Required}}<span class="text-status-failure">*</span>{{end}}
+                        </label>
+                        {{if .Description}}
+                        <p class="text-[11px] text-text-muted mb-1">{{.Description}}</p>
+                        {{end}}
+                        {{if eq .Type "choice"}}
+                        <select name="{{.Name}}" {{if .Required}}required{{end}}
+                                class="w-full bg-surface-2 border border-border-default rounded px-3 py-1.5 text-[13px] text-text-primary outline-none focus:border-accent">
+                            {{$inputName := .Name}}
+                            {{range .Options}}
+                            <option value="{{.}}" {{if and (eq $inputName "environment") (eq . $.EnvName)}}selected{{end}}>{{.}}</option>
+                            {{end}}
+                        </select>
+                        {{else if eq .Type "boolean"}}
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="{{.Name}}" value="true" {{if eq .Default "true"}}checked{{end}}
+                                   class="accent-accent">
+                            <span class="text-[13px] text-text-secondary">Enable</span>
+                        </label>
+                        {{else}}
+                        <input type="text" name="{{.Name}}" value="{{if eq .Name "environment"}}{{$.EnvName}}{{else}}{{.Default}}{{end}}" {{if .Required}}required{{end}}
+                               class="w-full bg-surface-2 border border-border-default rounded px-3 py-1.5 text-[13px] text-text-primary outline-none focus:border-accent">
+                        {{end}}
+                    </div>
+                    {{end}}
+                    <div class="pt-2">
+                        <button type="submit" class="btn btn-primary">
+                            {{template "icon-dispatch" $}} Dispatch
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </details>
+        {{end}}
+    </div>
+</div>
+{{else}}
+<div class="panel max-w-2xl">
+    <div class="p-6 text-center">
+        <p class="text-sm text-text-muted">No dispatchable workflows found.</p>
+        <p class="text-[11px] text-text-muted mt-1">Workflows need a <code class="font-mono bg-surface-2 px-1 rounded">workflow_dispatch</code> trigger.</p>
+    </div>
+</div>
+{{end}}
+{{end}}

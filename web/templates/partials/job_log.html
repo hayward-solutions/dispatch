@@ -1,0 +1,14 @@
+{{define "job_log.html"}}
+{{if .Error}}
+<div class="px-3 py-2 text-[11px] text-status-failure">{{.Error}}</div>
+{{else}}
+<div class="border-t border-border-subtle">
+    {{if .Truncated}}
+    <div class="px-3 py-1 text-[11px] text-status-pending bg-surface-3/50">
+        Log truncated to last 2,000 lines.
+    </div>
+    {{end}}
+    <pre class="text-[11px] leading-relaxed font-mono text-text-secondary bg-surface-base p-3 max-h-96 overflow-y-auto whitespace-pre-wrap break-all">{{.Log}}</pre>
+</div>
+{{end}}
+{{end}}

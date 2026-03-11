@@ -1,0 +1,120 @@
+{{define "ref_selector.html"}}
+{{if .Error}}
+<input type="hidden" name="ref" value="main">
+<div class="w-full bg-surface-2 border border-border-default rounded px-3 py-1.5 text-[13px] text-text-primary">main</div>
+{{else}}
+<div class="ref-selector relative" data-default="{{if .DefaultBranch}}{{.DefaultBranch}}{{else}}main{{end}}">
+    <input type="hidden" name="ref" value="{{if .DefaultBranch}}{{.DefaultBranch}}{{else}}main{{end}}">
+    <button type="button" class="ref-trigger w-full bg-surface-2 border border-border-default rounded px-3 py-1.5 text-[13px] text-text-primary outline-none focus:border-accent flex items-center gap-2 text-left">
+        <svg class="w-3.5 h-3.5 text-text-muted shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+        <span class="ref-label flex-1 truncate">{{if .DefaultBranch}}{{.DefaultBranch}}{{else}}main{{end}}</span>
+        <svg class="w-3 h-3 text-text-muted shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="ref-dropdown hidden absolute z-20 top-full left-0 right-0 mt-1 bg-surface-2 border border-border-default rounded-lg shadow-lg overflow-hidden">
+        <div class="p-2 border-b border-border-subtle">
+            <input type="text" class="ref-search w-full bg-surface-base border border-border-default rounded px-2.5 py-1.5 text-[12px] text-text-primary outline-none focus:border-accent placeholder:text-text-muted" placeholder="Filter refs...">
+        </div>
+        <div class="flex border-b border-border-subtle">
+            <button type="button" class="ref-tab flex-1 px-3 py-1.5 text-[11px] font-medium transition-colors" data-tab="branches">
+                Branches <span class="text-text-muted">({{len .Branches}})</span>
+            </button>
+            <button type="button" class="ref-tab flex-1 px-3 py-1.5 text-[11px] font-medium transition-colors" data-tab="tags">
+                Tags <span class="text-text-muted">({{len .Tags}})</span>
+            </button>
+        </div>
+        <div class="ref-list max-h-48 overflow-y-auto" data-active="branches">
+            {{range .Branches}}
+            <div class="ref-option px-3 py-1.5 text-[12px] cursor-pointer transition-colors flex items-center gap-2" data-value="{{.}}" data-type="branches">
+                <svg class="ref-check w-3 h-3 shrink-0 opacity-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <span class="truncate">{{.}}</span>
+            </div>
+            {{end}}
+            {{range .Tags}}
+            <div class="ref-option px-3 py-1.5 text-[12px] cursor-pointer transition-colors flex items-center gap-2 hidden" data-value="{{.}}" data-type="tags">
+                <svg class="ref-check w-3 h-3 shrink-0 opacity-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <span class="truncate">{{.}}</span>
+            </div>
+            {{end}}
+        </div>
+    </div>
+</div>
+<script>
+(function() {
+    const sel = document.currentScript.previousElementSibling;
+    if (!sel || !sel.classList.contains('ref-selector')) return;
+
+    const hidden = sel.querySelector('input[name="ref"]');
+    const trigger = sel.querySelector('.ref-trigger');
+    const label = sel.querySelector('.ref-label');
+    const dropdown = sel.querySelector('.ref-dropdown');
+    const search = sel.querySelector('.ref-search');
+    const list = sel.querySelector('.ref-list');
+    const tabs = sel.querySelectorAll('.ref-tab');
+    const options = sel.querySelectorAll('.ref-option');
+
+    let activeTab = 'branches';
+
+    function updateTabs() {
+        tabs.forEach(t => {
+            if (t.dataset.tab === activeTab) {
+                t.classList.add('text-text-primary', 'border-b-2', 'border-accent');
+                t.classList.remove('text-text-muted');
+            } else {
+                t.classList.remove('text-text-primary', 'border-b-2', 'border-accent');
+                t.classList.add('text-text-muted');
+            }
+        });
+        options.forEach(o => {
+            const matchTab = o.dataset.type === activeTab;
+            const matchSearch = !search.value || o.dataset.value.toLowerCase().includes(search.value.toLowerCase());
+            o.classList.toggle('hidden', !(matchTab && matchSearch));
+        });
+    }
+
+    function selectRef(value) {
+        hidden.value = value;
+        label.textContent = value;
+        options.forEach(o => {
+            o.querySelector('.ref-check').style.opacity = o.dataset.value === value ? '1' : '0';
+        });
+        close();
+    }
+
+    function open() {
+        dropdown.classList.remove('hidden');
+        search.value = '';
+        updateTabs();
+        setTimeout(() => search.focus(), 0);
+    }
+
+    function close() {
+        dropdown.classList.add('hidden');
+    }
+
+    function toggle() {
+        dropdown.classList.contains('hidden') ? open() : close();
+    }
+
+    trigger.addEventListener('click', toggle);
+
+    tabs.forEach(t => t.addEventListener('click', () => {
+        activeTab = t.dataset.tab;
+        updateTabs();
+    }));
+
+    options.forEach(o => o.addEventListener('click', () => selectRef(o.dataset.value)));
+
+    search.addEventListener('input', updateTabs);
+
+    document.addEventListener('click', (e) => {
+        if (!sel.contains(e.target)) close();
+    });
+
+    // Init: mark current selection
+    selectRef(hidden.value);
+    // Ensure branches tab is active on init
+    updateTabs();
+})();
+</script>
+{{end}}
+{{end}}

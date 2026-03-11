@@ -1,0 +1,26 @@
+{{define "repo_card.html"}}
+<div id="repo-{{.Repo.Owner}}-{{.Repo.Name}}" class="flex items-center justify-between px-4 py-3 hover:bg-surface-hover transition-colors">
+    <div class="min-w-0 flex-1">
+        <div class="flex items-center gap-2">
+            <a href="/repos/{{.Repo.Owner}}/{{.Repo.Name}}" class="text-sm font-medium text-text-primary hover:text-accent truncate">{{.Repo.FullName}}</a>
+            {{if .Repo.Private}}<span class="badge">private</span>{{end}}
+        </div>
+        {{if .Repo.Description}}
+        <p class="text-xs text-text-muted mt-0.5 truncate">{{.Repo.Description}}</p>
+        {{end}}
+    </div>
+    <div class="ml-4 shrink-0">
+        {{if .Tracked}}
+        <button class="btn btn-ghost text-xs"
+                hx-delete="/htmx/repos/{{.Repo.Owner}}/{{.Repo.Name}}/track"
+                hx-target="#repo-{{.Repo.Owner}}-{{.Repo.Name}}"
+                hx-swap="outerHTML">Untrack</button>
+        {{else}}
+        <button class="btn btn-primary text-xs"
+                hx-post="/htmx/repos/{{.Repo.Owner}}/{{.Repo.Name}}/track"
+                hx-target="#repo-{{.Repo.Owner}}-{{.Repo.Name}}"
+                hx-swap="outerHTML">Track</button>
+        {{end}}
+    </div>
+</div>
+{{end}}

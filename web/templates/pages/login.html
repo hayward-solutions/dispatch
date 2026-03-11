@@ -1,0 +1,22 @@
+{{define "title"}}Dispatch - Login{{end}}
+
+{{define "content"}}
+<div class="min-h-screen flex items-center justify-center bg-surface-base">
+    <div class="w-full max-w-sm mx-auto px-6">
+        <div class="panel p-8 text-center">
+            <div class="mb-6">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-accent/10 mb-4">
+                    {{template "icon-dispatch" .}}
+                </div>
+                <h1 class="text-xl font-semibold text-text-primary">Dispatch</h1>
+                <p class="text-sm text-text-muted mt-1">Manage GitHub Actions workflows and environments</p>
+            </div>
+            <a href="/auth/github" hx-boost="false"
+               class="btn btn-primary w-full inline-flex items-center justify-center gap-2">
+                {{template "icon-github" .}}
+                Sign in with GitHub
+            </a>
+        </div>
+    </div>
+</div>
+{{end}}
