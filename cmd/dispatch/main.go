@@ -38,6 +38,11 @@ func run() error {
 
 	setupLogging(cfg.LogLevel)
 
+	// Dev preview mode: no database, no GitHub OAuth, mock data only.
+	if cfg.DevPreview {
+		return runDevPreview(ctx, cfg)
+	}
+
 	// Database
 	db, err := database.New(ctx, cfg.DatabaseURL)
 	if err != nil {
@@ -186,6 +191,115 @@ func run() error {
 	}()
 
 	slog.Info("server starting", "addr", srv.Addr)
+	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+		return fmt.Errorf("server error: %w", err)
+	}
+
+	return nil
+}
+
+// runDevPreview starts the server in dev preview mode with mock data and no external dependencies.
+func runDevPreview(ctx context.Context, cfg *config.Config) error {
+	slog.Warn("DEV PREVIEW MODE — no auth, no database, mock data only")
+
+	// Templates
+	templateFS, err := fs.Sub(web.TemplateFS, "templates")
+	if err != nil {
+		return fmt.Errorf("template fs: %w", err)
+	}
+
+	renderer, err := tmpl.New(templateFS, true) // always dev mode
+	if err != nil {
+		return fmt.Errorf("init templates: %w", err)
+	}
+	handlers.SetRenderer(renderer)
+
+	preview := &handlers.DevPreviewHandler{}
+
+	// Router
+	mux := http.NewServeMux()
+
+	// Static files
+	staticFS, err := fs.Sub(web.StaticFS, "static")
+	if err != nil {
+		return fmt.Errorf("static fs: %w", err)
+	}
+	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
+
+	// Health check (no DB)
+	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok (dev preview)"))
+	})
+
+	// Login page redirects to repos in preview mode
+	mux.HandleFunc("GET /login", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/repos", http.StatusSeeOther)
+	})
+
+	// Redirect root to repos
+	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/repos", http.StatusSeeOther)
+	})
+
+	// All routes use DevPreviewAuth middleware
+	protect := func(pattern string, handler http.HandlerFunc) {
+		mux.Handle(pattern, auth.DevPreviewAuth(http.HandlerFunc(handler)))
+	}
+
+	protect("GET /dashboard", preview.Dashboard)
+
+	protect("GET /repos", preview.ReposPage)
+	protect("GET /repos/search", preview.SearchRepos)
+	protect("GET /repos/{owner}/{name}", preview.RepoDetail)
+	protect("POST /repos/{owner}/{name}/track", preview.TrackRepo)
+	protect("DELETE /repos/{owner}/{name}/track", preview.UntrackRepo)
+	protect("GET /sidebar/repos", preview.SidebarRepos)
+
+	protect("GET /repos/{owner}/{name}/runs", preview.ListWorkflowRuns)
+	protect("GET /repos/{owner}/{name}/runs/{runID}/jobs", preview.GetRunJobs)
+	protect("GET /repos/{owner}/{name}/jobs/{jobID}/log", preview.GetJobLog)
+
+	protect("GET /repos/{owner}/{name}/environments", preview.ListEnvironments)
+	protect("GET /repos/{owner}/{name}/environments/new", preview.NewEnvironmentPage)
+	protect("POST /repos/{owner}/{name}/environments", preview.CreateEnvironment)
+	protect("GET /repos/{owner}/{name}/environments/{env}", preview.EnvDetail)
+	protect("DELETE /repos/{owner}/{name}/environments/{env}", preview.DeleteEnvironment)
+	protect("GET /repos/{owner}/{name}/environments/{env}/export", preview.ExportEnvConfig)
+
+	protect("GET /repos/{owner}/{name}/environments/{env}/variables", preview.ListEnvVariables)
+	protect("POST /repos/{owner}/{name}/environments/{env}/variables", preview.CreateEnvVariable)
+	protect("PATCH /repos/{owner}/{name}/environments/{env}/variables/{varName}", preview.UpdateEnvVariable)
+	protect("DELETE /repos/{owner}/{name}/environments/{env}/variables/{varName}", preview.DeleteEnvVariable)
+
+	protect("GET /repos/{owner}/{name}/environments/{env}/secrets", preview.ListEnvSecrets)
+	protect("POST /repos/{owner}/{name}/environments/{env}/secrets", preview.CreateEnvSecret)
+	protect("DELETE /repos/{owner}/{name}/environments/{env}/secrets/{secretName}", preview.DeleteEnvSecret)
+
+	protect("GET /repos/{owner}/{name}/environments/{env}/deployments", preview.ListEnvDeployments)
+	protect("GET /repos/{owner}/{name}/environments/{env}/dispatch", preview.DispatchPage)
+	protect("POST /repos/{owner}/{name}/dispatch", preview.DispatchWorkflow)
+	protect("GET /repos/{owner}/{name}/environments/{env}/workflows", preview.ListDispatchWorkflows)
+	protect("GET /repos/{owner}/{name}/refs", preview.ListRepoRefs)
+
+	// Server
+	srv := &http.Server{
+		Addr:         fmt.Sprintf(":%d", cfg.Port),
+		Handler:      mux,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+
+	go func() {
+		<-ctx.Done()
+		slog.Info("shutting down server")
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		srv.Shutdown(shutdownCtx)
+	}()
+
+	slog.Info("server starting (dev preview)", "addr", srv.Addr)
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 		return fmt.Errorf("server error: %w", err)
 	}

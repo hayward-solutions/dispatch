@@ -20,7 +20,8 @@ type Config struct {
 	EncryptionKey      []byte // 32 bytes for AES-256
 	SessionSecret      []byte // 32 bytes for securecookie
 	LogLevel           string
-	SessionMaxAge      int // seconds
+	SessionMaxAge      int  // seconds
+	DevPreview         bool // when true, serves mock data without auth or database
 }
 
 // buildDatabaseURL returns DATABASE_URL if set, otherwise constructs one
@@ -60,6 +61,20 @@ func Load() (*Config, error) {
 			return nil, fmt.Errorf("invalid PORT: %w", err)
 		}
 		port = p
+	}
+
+	// Dev preview mode: skip all external dependencies (DB, GitHub OAuth).
+	// Refuses to activate if PRODUCTION=true is set.
+	if strings.EqualFold(os.Getenv("DEV_PREVIEW"), "true") {
+		if strings.EqualFold(os.Getenv("PRODUCTION"), "true") {
+			return nil, fmt.Errorf("DEV_PREVIEW cannot be enabled when PRODUCTION=true")
+		}
+		return &Config{
+			Port:       port,
+			BaseURL:    getenv("BASE_URL", fmt.Sprintf("http://localhost:%d", port)),
+			LogLevel:   getenv("LOG_LEVEL", "debug"),
+			DevPreview: true,
+		}, nil
 	}
 
 	sessionMaxAge := 2592000 // 30 days
