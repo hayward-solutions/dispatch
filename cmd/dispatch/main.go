@@ -101,6 +101,7 @@ func run() error {
 	reposHandler := handlers.NewReposHandler(trackedRepoStore)
 	workflowsHandler := handlers.NewWorkflowsHandler()
 	envsHandler := handlers.NewEnvironmentsHandler()
+	advancedHandler := handlers.NewAdvancedHandler()
 
 	// Router
 	mux := http.NewServeMux()
@@ -166,6 +167,10 @@ func run() error {
 	protect("GET /repos/{owner}/{name}/environments/{env}/secrets", envsHandler.ListEnvSecrets)
 	protect("POST /repos/{owner}/{name}/environments/{env}/secrets", envsHandler.CreateEnvSecret)
 	protect("DELETE /repos/{owner}/{name}/environments/{env}/secrets/{secretName}", envsHandler.DeleteEnvSecret)
+
+	protect("GET /repos/{owner}/{name}/environments/{env}/advanced", advancedHandler.AdvancedEnvDetail)
+	protect("GET /repos/{owner}/{name}/environments/{env}/step/{stepIdx}", advancedHandler.GetStep)
+	protect("POST /repos/{owner}/{name}/environments/{env}/step/{stepIdx}", advancedHandler.SaveStep)
 
 	protect("GET /repos/{owner}/{name}/environments/{env}/deployments", envsHandler.ListEnvDeployments)
 	protect("GET /repos/{owner}/{name}/environments/{env}/dispatch", envsHandler.DispatchPage)
@@ -275,6 +280,10 @@ func runDevPreview(ctx context.Context, cfg *config.Config) error {
 	protect("GET /repos/{owner}/{name}/environments/{env}/secrets", preview.ListEnvSecrets)
 	protect("POST /repos/{owner}/{name}/environments/{env}/secrets", preview.CreateEnvSecret)
 	protect("DELETE /repos/{owner}/{name}/environments/{env}/secrets/{secretName}", preview.DeleteEnvSecret)
+
+	protect("GET /repos/{owner}/{name}/environments/{env}/advanced", preview.AdvancedEnvDetail)
+	protect("GET /repos/{owner}/{name}/environments/{env}/step/{stepIdx}", preview.GetStep)
+	protect("POST /repos/{owner}/{name}/environments/{env}/step/{stepIdx}", preview.SaveStep)
 
 	protect("GET /repos/{owner}/{name}/environments/{env}/deployments", preview.ListEnvDeployments)
 	protect("GET /repos/{owner}/{name}/environments/{env}/dispatch", preview.DispatchPage)

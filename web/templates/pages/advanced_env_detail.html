@@ -1,0 +1,113 @@
+{{define "title"}}Dispatch - {{.Repo.FullName}} / {{.EnvName}}{{end}}
+
+{{define "content"}}
+<div class="mb-6">
+    <div class="flex items-center gap-2 text-sm text-text-muted mb-1">
+        <a href="/repos" class="hover:text-text-primary">Repositories</a>
+        <span>/</span>
+        <a href="/repos/{{.Repo.Owner}}/{{.Repo.Name}}" class="hover:text-text-primary">{{.Repo.FullName}}</a>
+        <span>/</span>
+        <span class="text-text-primary">{{.EnvName}}</span>
+    </div>
+    <div class="flex items-center gap-2">
+        {{template "icon-environment" .}}
+        <h1 class="text-lg font-semibold text-text-primary flex-1">{{.EnvName}}</h1>
+        <span class="text-[10px] font-medium text-accent bg-accent/10 px-1.5 py-0.5 rounded">Advanced</span>
+        <button class="btn btn-danger btn-sm"
+                hx-delete="/repos/{{.Repo.Owner}}/{{.Repo.Name}}/environments/{{.EnvName}}"
+                hx-swap="none"
+                hx-confirm="Delete environment '{{.EnvName}}'? This cannot be undone.">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            Delete
+        </button>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <!-- Left column: Dispatch, Configuration -->
+    <div class="flex flex-col gap-4">
+        <div class="panel">
+            <div class="px-4 py-3 border-b border-border-subtle flex items-center gap-2">
+                {{template "icon-dispatch" .}}
+                <h2 class="text-sm font-medium text-text-primary">Run Workflow</h2>
+            </div>
+            <div hx-get="/repos/{{.Repo.Owner}}/{{.Repo.Name}}/environments/{{.EnvName}}/workflows"
+                 hx-trigger="load"
+                 hx-target="this"
+                 hx-disinherit="hx-target hx-swap">
+                <div class="p-4"><div class="skeleton h-4 w-3/4 mb-2"></div><div class="skeleton h-4 w-1/2"></div></div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <span>Configuration</span>
+            </div>
+            {{range $i, $step := .Config.Flow}}
+            <div class="border-b border-border-subtle last:border-b-0">
+                <button class="px-4 py-2.5 w-full text-left hover:bg-surface-hover transition-colors flex items-center gap-2 step-accordion-btn"
+                        data-step="{{$i}}"
+                        onclick="toggleStep(this, {{$i}})">
+                    <svg class="w-3.5 h-3.5 text-text-muted transition-transform shrink-0 step-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    <div class="flex-1 min-w-0">
+                        <span class="text-sm font-medium text-text-primary block">{{$step.Name}}</span>
+                        {{if $step.Description}}
+                        <span class="text-[11px] text-text-muted block mt-0.5">{{$step.Description}}</span>
+                        {{end}}
+                    </div>
+                </button>
+                <div class="step-content hidden border-t border-border-subtle" id="step-content-{{$i}}"
+                     data-loaded="false"
+                     data-url="/repos/{{$.Repo.Owner}}/{{$.Repo.Name}}/environments/{{$.EnvName}}/step/{{$i}}">
+                </div>
+            </div>
+            {{end}}
+        </div>
+    </div>
+
+    <!-- Right column: Deployments -->
+    <div class="panel h-fit">
+        <div class="px-4 py-3 border-b border-border-subtle flex items-center gap-2">
+            {{template "icon-workflow" .}}
+            <h2 class="text-sm font-medium text-text-primary">Deployments</h2>
+        </div>
+        <div hx-get="/repos/{{.Repo.Owner}}/{{.Repo.Name}}/environments/{{.EnvName}}/deployments"
+             hx-trigger="load"
+             hx-target="this">
+            <div class="p-4"><div class="skeleton h-4 w-3/4 mb-2"></div><div class="skeleton h-4 w-1/2"></div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleStep(btn, index) {
+    const content = document.getElementById('step-content-' + index);
+    const chevron = btn.querySelector('.step-chevron');
+    const isOpen = !content.classList.contains('hidden');
+
+    // Close all other steps
+    document.querySelectorAll('.step-accordion-btn').forEach(function(b) {
+        const i = b.dataset.step;
+        const c = document.getElementById('step-content-' + i);
+        const ch = b.querySelector('.step-chevron');
+        if (i != index) {
+            c.classList.add('hidden');
+            ch.style.transform = '';
+        }
+    });
+
+    if (isOpen) {
+        content.classList.add('hidden');
+        chevron.style.transform = '';
+    } else {
+        content.classList.remove('hidden');
+        chevron.style.transform = 'rotate(90deg)';
+        // Lazy-load content on first open
+        if (content.dataset.loaded === 'false') {
+            content.dataset.loaded = 'true';
+            htmx.ajax('GET', content.dataset.url, {target: content, swap: 'innerHTML'});
+        }
+    }
+}
+</script>
+{{end}}

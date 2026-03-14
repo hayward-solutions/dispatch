@@ -76,3 +76,35 @@ document.addEventListener("click", function (e) {
         dialog.close();
     }
 });
+
+// Dynamic row management for advanced step forms
+function addRow(container) {
+    var tmpl = container.querySelector("[data-row-template]");
+    if (!tmpl) return;
+    var countInput = container.querySelector("[data-count]");
+    var count = parseInt(countInput.value, 10);
+    var html = tmpl.innerHTML.replace(/__IDX__/g, count);
+    var wrapper = document.createElement("div");
+    wrapper.innerHTML = html.trim();
+    var row = wrapper.firstElementChild;
+    container.querySelector("[data-rows]").appendChild(row);
+    countInput.value = count + 1;
+}
+
+function removeRow(btn) {
+    var row = btn.closest("[data-row]");
+    var container = row.closest("[data-dynamic]");
+    row.remove();
+    reindexRows(container);
+}
+
+function reindexRows(container) {
+    var rows = container.querySelectorAll("[data-row]");
+    rows.forEach(function (row, i) {
+        row.querySelectorAll("input,select,textarea").forEach(function (input) {
+            input.name = input.name.replace(/__\d+__/, "__" + i + "__");
+        });
+    });
+    var countInput = container.querySelector("[data-count]");
+    if (countInput) countInput.value = rows.length;
+}

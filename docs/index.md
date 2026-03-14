@@ -12,6 +12,7 @@ A self-hosted dashboard for managing GitHub Actions workflows and environments. 
 - **Repository tracking** — browse and track your GitHub repositories
 - **Environment management** — create, configure, and delete GitHub environments
 - **Variables & secrets** — CRUD operations on environment variables and secrets
+- **Advanced configuration** — typed, step-based environment config for Terraform repos via [`.dispatch.yaml`](advanced-configuration.md)
 - **Workflow dispatch** — trigger `workflow_dispatch` workflows with custom inputs
 - **Deployment history** — view deployment status and history per environment
 - **Command palette** — quick navigation with `Cmd+K`

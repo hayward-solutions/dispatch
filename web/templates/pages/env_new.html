@@ -20,6 +20,10 @@
       hx-swap="none"
       class="flex flex-col gap-4 max-w-2xl">
 
+    {{if .AdvancedMode}}
+    <input type="hidden" name="advanced" value="true">
+    {{end}}
+
     <div class="panel">
         <div class="panel-header">
             <span>Environment</span>
@@ -42,9 +46,13 @@
                 </select>
             </div>
             {{end}}
+            {{if .AdvancedMode}}
+            <p class="text-[11px] text-text-muted">Variables will be configured through the step-by-step flow after creation.</p>
+            {{end}}
         </div>
     </div>
 
+    {{if not .AdvancedMode}}
     <div class="panel">
         <div class="panel-header">
             <span>Variables</span>
@@ -66,6 +74,7 @@
         <div class="divide-y divide-border-subtle" id="secret-rows"></div>
         <p class="text-[11px] text-text-muted px-4 py-2.5" id="secret-empty">No secrets added yet.</p>
     </div>
+    {{end}}
 
     <div class="flex items-center gap-2">
         <button type="submit" class="btn btn-primary">Create Environment</button>
@@ -73,6 +82,7 @@
     </div>
 </form>
 
+{{if not .AdvancedMode}}
 <script>
 (function() {
     const removeIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
@@ -140,4 +150,5 @@
     }
 })();
 </script>
+{{end}}
 {{end}}

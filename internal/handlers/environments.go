@@ -83,8 +83,13 @@ func (h *EnvironmentsHandler) CreateEnvironment(w http.ResponseWriter, r *http.R
 		}
 	}
 
+	redirect := "/repos/" + owner + "/" + name + "/environments/" + envName
+	if r.FormValue("advanced") == "true" {
+		redirect += "/advanced"
+	}
+
 	w.Header().Set("HX-Trigger", `{"showToast": {"message": "Environment created", "type": "success"}}`)
-	w.Header().Set("HX-Redirect", "/repos/"+owner+"/"+name+"/environments/"+envName)
+	w.Header().Set("HX-Redirect", redirect)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -124,12 +129,18 @@ func (h *EnvironmentsHandler) NewEnvironmentPage(w http.ResponseWriter, r *http.
 		return
 	}
 
-	renderer.Page(w, "env_new", map[string]any{
+	data := map[string]any{
 		"User":         user,
 		"Repo":         repo,
 		"Environments": environments,
 		"ActivePage":   "repos",
-	})
+	}
+
+	if r.URL.Query().Get("advanced") == "true" {
+		data["AdvancedMode"] = true
+	}
+
+	renderer.Page(w, "env_new", data)
 }
 
 func (h *EnvironmentsHandler) ExportEnvConfig(w http.ResponseWriter, r *http.Request) {
@@ -234,6 +245,7 @@ func (h *EnvironmentsHandler) ListEnvironments(w http.ResponseWriter, r *http.Re
 		"Owner":        owner,
 		"Name":         name,
 		"RepoID":       repo.ID,
+		"Advanced":     r.URL.Query().Get("advanced") == "true",
 	})
 }
 

@@ -30,6 +30,24 @@
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    {{if .AdvancedMode}}
+    <div class="panel">
+        <div class="px-4 py-3 border-b border-border-subtle flex items-center gap-2">
+            {{template "icon-environment" .}}
+            <h2 class="text-sm font-medium text-text-primary flex-1">Environments</h2>
+            <span class="text-[10px] font-medium text-accent bg-accent/10 px-1.5 py-0.5 rounded">Advanced</span>
+            <a href="/repos/{{.Repo.Owner}}/{{.Repo.Name}}/environments/new?advanced=true" class="btn-icon">
+                {{template "icon-plus" .}}
+            </a>
+        </div>
+        <div hx-get="/repos/{{.Repo.Owner}}/{{.Repo.Name}}/environments?advanced=true"
+             hx-trigger="load, refreshEnvList from:body"
+             hx-target="this"
+             hx-disinherit="hx-target hx-swap">
+            <div class="p-4"><div class="skeleton h-4 w-3/4 mb-2"></div><div class="skeleton h-4 w-1/2"></div></div>
+        </div>
+    </div>
+    {{else}}
     <div class="panel">
         <div class="px-4 py-3 border-b border-border-subtle flex items-center gap-2">
             {{template "icon-environment" .}}
@@ -45,6 +63,7 @@
             <div class="p-4"><div class="skeleton h-4 w-3/4 mb-2"></div><div class="skeleton h-4 w-1/2"></div></div>
         </div>
     </div>
+    {{end}}
 
     <div class="panel">
         <div class="px-4 py-3 border-b border-border-subtle flex items-center gap-2">
