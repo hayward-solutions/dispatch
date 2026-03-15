@@ -104,6 +104,7 @@ func run() error {
 	workflowsHandler := handlers.NewWorkflowsHandler()
 	envsHandler := handlers.NewEnvironmentsHandler()
 	advancedHandler := handlers.NewAdvancedHandler()
+	observabilityHandler := handlers.NewObservabilityHandler()
 
 	// Router
 	mux := http.NewServeMux()
@@ -153,6 +154,9 @@ func run() error {
 	protect("GET /repos/{owner}/{name}/runs", workflowsHandler.ListWorkflowRuns)
 	protect("GET /repos/{owner}/{name}/runs/{runID}/jobs", workflowsHandler.GetRunJobs)
 	protect("GET /repos/{owner}/{name}/jobs/{jobID}/log", workflowsHandler.GetJobLog)
+
+	protect("GET /repos/{owner}/{name}/observability", observabilityHandler.RepoObservabilityPage)
+	protect("GET /repos/{owner}/{name}/observability/history", observabilityHandler.ObservabilityHistory)
 
 	protect("GET /repos/{owner}/{name}/environments", envsHandler.ListEnvironments)
 	protect("GET /repos/{owner}/{name}/environments/new", envsHandler.NewEnvironmentPage)
@@ -266,6 +270,9 @@ func runDevPreview(ctx context.Context, cfg *config.Config) error {
 	protect("GET /repos/{owner}/{name}/runs", preview.ListWorkflowRuns)
 	protect("GET /repos/{owner}/{name}/runs/{runID}/jobs", preview.GetRunJobs)
 	protect("GET /repos/{owner}/{name}/jobs/{jobID}/log", preview.GetJobLog)
+
+	protect("GET /repos/{owner}/{name}/observability", preview.RepoObservability)
+	protect("GET /repos/{owner}/{name}/observability/history", preview.ObservabilityHistory)
 
 	protect("GET /repos/{owner}/{name}/environments", preview.ListEnvironments)
 	protect("GET /repos/{owner}/{name}/environments/new", preview.NewEnvironmentPage)

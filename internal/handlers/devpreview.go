@@ -673,3 +673,68 @@ func (h *DevPreviewHandler) ListRepoRefs(w http.ResponseWriter, r *http.Request)
 		"Tags":     mockRepoRefs.Tags,
 	})
 }
+
+// Observability mock data
+
+var mockObsRuns = []gh.WorkflowRunSummary{
+	{ID: 10001, WorkflowID: 5001, WorkflowName: "CI", Status: "completed", Conclusion: "success", CreatedAt: time.Now().Add(-15 * time.Minute), RunStartedAt: time.Now().Add(-15 * time.Minute), UpdatedAt: time.Now().Add(-12 * time.Minute), HeadBranch: "main", HeadSHA: "a1b2c3d4e5f6", HTMLURL: "https://github.com/acme-corp/api-gateway/actions/runs/10001", DurationSecs: 180, Event: "push", Actor: "jsmith", ActorAvatar: "https://github.com/ghost.png"},
+	{ID: 10002, WorkflowID: 5002, WorkflowName: "Deploy", Status: "completed", Conclusion: "failure", CreatedAt: time.Now().Add(-45 * time.Minute), RunStartedAt: time.Now().Add(-45 * time.Minute), UpdatedAt: time.Now().Add(-40 * time.Minute), HeadBranch: "release/v2.4.1", HeadSHA: "b2c3d4e5f6a1", HTMLURL: "https://github.com/acme-corp/api-gateway/actions/runs/10002", DurationSecs: 300, Event: "workflow_dispatch", Actor: "agarcia", ActorAvatar: "https://github.com/ghost.png"},
+	{ID: 10003, WorkflowID: 5001, WorkflowName: "CI", Status: "in_progress", Conclusion: "", CreatedAt: time.Now().Add(-5 * time.Minute), RunStartedAt: time.Now().Add(-5 * time.Minute), HeadBranch: "feature/tracing", HeadSHA: "c3d4e5f6a1b2", HTMLURL: "https://github.com/acme-corp/api-gateway/actions/runs/10003", DurationSecs: 0, Event: "pull_request", Actor: "mwong", ActorAvatar: "https://github.com/ghost.png"},
+	{ID: 10004, WorkflowID: 5003, WorkflowName: "Security Scan", Status: "completed", Conclusion: "success", CreatedAt: time.Now().Add(-3 * time.Hour), RunStartedAt: time.Now().Add(-3 * time.Hour), UpdatedAt: time.Now().Add(-2*time.Hour - 55*time.Minute), HeadBranch: "main", HeadSHA: "d4e5f6a1b2c3", HTMLURL: "https://github.com/acme-corp/api-gateway/actions/runs/10004", DurationSecs: 300, Event: "schedule", Actor: "github-actions", ActorAvatar: "https://github.com/ghost.png"},
+	{ID: 10005, WorkflowID: 5001, WorkflowName: "CI", Status: "completed", Conclusion: "success", CreatedAt: time.Now().Add(-6 * time.Hour), RunStartedAt: time.Now().Add(-6 * time.Hour), UpdatedAt: time.Now().Add(-5*time.Hour - 57*time.Minute), HeadBranch: "main", HeadSHA: "e5f6a1b2c3d4", HTMLURL: "https://github.com/acme-corp/api-gateway/actions/runs/10005", DurationSecs: 180, Event: "push", Actor: "jsmith", ActorAvatar: "https://github.com/ghost.png"},
+	{ID: 10006, WorkflowID: 5001, WorkflowName: "CI", Status: "completed", Conclusion: "success", CreatedAt: time.Now().Add(-12 * time.Hour), RunStartedAt: time.Now().Add(-12 * time.Hour), UpdatedAt: time.Now().Add(-11*time.Hour - 57*time.Minute), HeadBranch: "fix/auth-bug", HeadSHA: "f6a1b2c3d4e5", HTMLURL: "https://github.com/acme-corp/api-gateway/actions/runs/10006", DurationSecs: 195, Event: "pull_request", Actor: "agarcia", ActorAvatar: "https://github.com/ghost.png"},
+	{ID: 10007, WorkflowID: 5002, WorkflowName: "Deploy", Status: "completed", Conclusion: "success", CreatedAt: time.Now().Add(-24 * time.Hour), RunStartedAt: time.Now().Add(-24 * time.Hour), UpdatedAt: time.Now().Add(-23*time.Hour - 55*time.Minute), HeadBranch: "main", HeadSHA: "a1b2c3d4e5f6", HTMLURL: "https://github.com/acme-corp/api-gateway/actions/runs/10007", DurationSecs: 300, Event: "workflow_dispatch", Actor: "jsmith", ActorAvatar: "https://github.com/ghost.png"},
+	{ID: 10008, WorkflowID: 5001, WorkflowName: "CI", Status: "completed", Conclusion: "failure", CreatedAt: time.Now().Add(-36 * time.Hour), RunStartedAt: time.Now().Add(-36 * time.Hour), UpdatedAt: time.Now().Add(-35*time.Hour - 58*time.Minute), HeadBranch: "feature/api-v3", HeadSHA: "b2c3d4e5f6a1", HTMLURL: "https://github.com/acme-corp/api-gateway/actions/runs/10008", DurationSecs: 120, Event: "push", Actor: "mwong", ActorAvatar: "https://github.com/ghost.png"},
+}
+
+var mockObservability = &gh.RepoObservability{
+	TotalRuns:       87,
+	SuccessRate:     91.2,
+	AvgDurationSecs: 215,
+	TotalFailures:   7,
+	WorkflowStats: []gh.WorkflowStat{
+		{WorkflowID: 5001, WorkflowName: "CI", TotalRuns: 62, SuccessCount: 57, FailureCount: 5, SuccessRate: 91.9, AvgDurationSecs: 185, LastRunAt: timePtr(time.Now().Add(-5 * time.Minute)), LastConclusion: ""},
+		{WorkflowID: 5002, WorkflowName: "Deploy", TotalRuns: 15, SuccessCount: 13, FailureCount: 2, SuccessRate: 86.7, AvgDurationSecs: 310, LastRunAt: timePtr(time.Now().Add(-45 * time.Minute)), LastConclusion: "failure"},
+		{WorkflowID: 5003, WorkflowName: "Security Scan", TotalRuns: 10, SuccessCount: 10, FailureCount: 0, SuccessRate: 100.0, AvgDurationSecs: 290, LastRunAt: timePtr(time.Now().Add(-3 * time.Hour)), LastConclusion: "success"},
+	},
+	RecentRuns: mockObsRuns,
+	BillableMinutes: &gh.RepoBillableMinutes{
+		Ubuntu:  342,
+		MacOS:   28,
+		Windows: 15,
+		Total:   385,
+	},
+	Period: "Last 30 days",
+}
+
+func timePtr(t time.Time) *time.Time { return &t }
+
+// Observability handlers
+
+func (h *DevPreviewHandler) RepoObservability(w http.ResponseWriter, r *http.Request) {
+	user := auth.UserFromContext(r.Context())
+	owner := r.PathValue("owner")
+	name := r.PathValue("name")
+	repo := &gh.Repo{ID: 101, Owner: owner, Name: name, FullName: owner + "/" + name, Description: "A sample repository for preview mode", HTMLURL: "https://github.com/" + owner + "/" + name}
+	renderer.Page(w, "observability", map[string]any{
+		"User":          user,
+		"Owner":         owner,
+		"Name":          name,
+		"Repo":          repo,
+		"Observability": mockObservability,
+		"ActivePage":    "repos",
+	})
+}
+
+func (h *DevPreviewHandler) ObservabilityHistory(w http.ResponseWriter, r *http.Request) {
+	owner := r.PathValue("owner")
+	name := r.PathValue("name")
+	renderer.Partial(w, "obs_history", map[string]any{
+		"Runs":    mockObsRuns,
+		"Total":   len(mockObsRuns),
+		"Page":    1,
+		"PerPage": 25,
+		"Owner":   owner,
+		"Name":    name,
+	})
+}

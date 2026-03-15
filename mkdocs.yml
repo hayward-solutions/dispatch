@@ -43,6 +43,7 @@ nav:
   - Home: index.md
   - Getting Started: getting-started.md
   - Configuration: configuration.md
+  - Observability: observability.md
   - Deployment: deployment.md
   - Contributing: contributing.md
   - Security: security.md
