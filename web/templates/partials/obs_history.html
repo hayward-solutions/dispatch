@@ -1,0 +1,98 @@
+{{define "obs_history.html"}}
+{{if .Error}}
+<div class="p-4 text-sm text-text-muted">{{.Error}}</div>
+{{else if not .Runs}}
+<div class="p-4 text-sm text-text-muted">No workflow runs found</div>
+{{else}}
+<div class="overflow-x-auto">
+    <table class="w-full text-[13px]">
+        <thead>
+            <tr class="border-b border-border-subtle text-text-muted">
+                <th class="text-left font-medium px-4 py-2">Workflow</th>
+                <th class="text-left font-medium px-4 py-2">Branch</th>
+                <th class="text-left font-medium px-4 py-2">Status</th>
+                <th class="text-right font-medium px-4 py-2">Duration</th>
+                <th class="text-right font-medium px-4 py-2">Started</th>
+                <th class="text-right font-medium px-4 py-2"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Runs}}
+            <tr class="border-b border-border-subtle hover:bg-surface-hover">
+                <td class="px-4 py-2.5 text-text-primary font-medium">{{.WorkflowName}}</td>
+                <td class="px-4 py-2.5 text-text-secondary">
+                    <span class="bg-surface-2 px-1.5 py-0.5 rounded text-[12px]">{{.HeadBranch}}</span>
+                </td>
+                <td class="px-4 py-2.5">
+                    {{if eq .Conclusion "success"}}
+                    <span class="inline-flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-status-success"></span>
+                        <span class="text-status-success">Success</span>
+                    </span>
+                    {{else if eq .Conclusion "failure"}}
+                    <span class="inline-flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-status-failure"></span>
+                        <span class="text-status-failure">Failure</span>
+                    </span>
+                    {{else if eq .Conclusion "cancelled"}}
+                    <span class="inline-flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-status-pending"></span>
+                        <span class="text-text-muted">Cancelled</span>
+                    </span>
+                    {{else if eq .Status "in_progress"}}
+                    <span class="inline-flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-status-running"></span>
+                        <span class="text-status-running">Running</span>
+                    </span>
+                    {{else if eq .Status "queued"}}
+                    <span class="inline-flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-status-pending"></span>
+                        <span class="text-text-muted">Queued</span>
+                    </span>
+                    {{else}}
+                    <span class="inline-flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-status-pending"></span>
+                        <span class="text-text-muted">{{if .Conclusion}}{{.Conclusion}}{{else}}{{.Status}}{{end}}</span>
+                    </span>
+                    {{end}}
+                </td>
+                <td class="px-4 py-2.5 text-right text-text-secondary">
+                    {{if gt .DurationSecs 0}}{{durationSecs .DurationSecs}}{{else}}&mdash;{{end}}
+                </td>
+                <td class="px-4 py-2.5 text-right text-text-muted">{{timeAgo .CreatedAt}}</td>
+                <td class="px-4 py-2.5 text-right">
+                    <a href="{{.HTMLURL}}" target="_blank" class="text-text-muted hover:text-text-primary">
+                        {{template "icon-external" .}}
+                    </a>
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+</div>
+
+{{if gt .Total .PerPage}}
+<div class="flex items-center justify-between px-4 py-3 border-t border-border-subtle">
+    <span class="text-[12px] text-text-muted">
+        Showing {{len .Runs}} of {{.Total}} runs
+    </span>
+    <div class="flex items-center gap-2">
+        {{if gt .Page 1}}
+        <button class="btn btn-ghost text-xs"
+                hx-get="/repos/{{.Owner}}/{{.Name}}/observability/history?page={{sub .Page 1}}{{if .WorkflowID}}&workflow_id={{.WorkflowID}}{{end}}{{if .Status}}&status={{.Status}}{{end}}{{if .Branch}}&branch={{.Branch}}{{end}}"
+                hx-target="#obs-history-target"
+                hx-swap="innerHTML">Previous</button>
+        {{end}}
+        <span class="text-[12px] text-text-muted">Page {{.Page}}</span>
+        {{if gt .Total (mul .Page .PerPage)}}
+        <button class="btn btn-ghost text-xs"
+                hx-get="/repos/{{.Owner}}/{{.Name}}/observability/history?page={{add .Page 1}}{{if .WorkflowID}}&workflow_id={{.WorkflowID}}{{end}}{{if .Status}}&status={{.Status}}{{end}}{{if .Branch}}&branch={{.Branch}}{{end}}"
+                hx-target="#obs-history-target"
+                hx-swap="innerHTML">Next</button>
+        {{end}}
+    </div>
+</div>
+{{end}}
+
+{{end}}
+{{end}}

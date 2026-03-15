@@ -51,6 +51,9 @@ func New(fsys fs.FS, dev bool) (*Renderer, error) {
 			"mapEntries":  mapEntriesFunc,
 			"toSlice":     toSliceFunc,
 			"toBool":      toBoolFunc,
+			"mul":          func(a, b int) int { return a * b },
+			"durationSecs": durationSecsFunc,
+			"pct":          func(f float64) string { return fmt.Sprintf("%.1f%%", f) },
 		},
 	}
 
@@ -296,6 +299,20 @@ func toSliceFunc(v any) []any {
 		return s
 	}
 	return []any{}
+}
+
+// durationSecsFunc formats seconds into a human-readable duration string.
+func durationSecsFunc(secs int64) string {
+	if secs <= 0 {
+		return "0s"
+	}
+	if secs < 60 {
+		return fmt.Sprintf("%ds", secs)
+	}
+	if secs < 3600 {
+		return fmt.Sprintf("%dm %ds", secs/60, secs%60)
+	}
+	return fmt.Sprintf("%dh %dm", secs/3600, (secs%3600)/60)
 }
 
 // toBoolFunc safely coerces any to bool.

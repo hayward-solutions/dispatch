@@ -22,6 +22,9 @@
                     hx-post="/repos/{{.Repo.Owner}}/{{.Repo.Name}}/track"
                     hx-swap="none">Track</button>
             {{end}}
+            <a href="/repos/{{.Repo.Owner}}/{{.Repo.Name}}/observability" class="btn btn-ghost text-xs inline-flex items-center gap-1">
+                {{template "icon-chart" .}} Observability
+            </a>
             <a href="{{.Repo.HTMLURL}}" target="_blank" class="btn btn-ghost text-xs inline-flex items-center gap-1">
                 {{template "icon-external" .}} GitHub
             </a>
