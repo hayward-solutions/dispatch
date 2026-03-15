@@ -3,10 +3,13 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/hayward-solutions/dispatch.v2/internal/auth"
+	"github.com/hayward-solutions/dispatch.v2/internal/dispatch"
+	"github.com/hayward-solutions/dispatch.v2/internal/engine"
 	gh "github.com/hayward-solutions/dispatch.v2/internal/github"
 	"github.com/hayward-solutions/dispatch.v2/internal/models"
 )
@@ -172,6 +175,76 @@ func (h *DevPreviewHandler) SearchRepos(w http.ResponseWriter, r *http.Request) 
 	})
 }
 
+// mockAdvancedConfig is the dispatch config for advanced-mode repos.
+var mockAdvancedConfig = &dispatch.Config{
+	Mode:          "terraform",
+	VariablesPath: "terraform/variables.tf",
+	IgnoreInputs:  []string{"assume_role_arns", "region", "email", "ou_name", "bucket_prefix"},
+	Flow: []dispatch.Step{
+		{Name: "Regions", Inputs: []string{"additional_regions"}},
+		{Name: "GitHub Repositories", Description: "Allow GitHub repositories access to this account with Actions OIDC.", Inputs: []string{"terraform_repositories", "ecr_repositories"}},
+		{Name: "Monitoring", Inputs: []string{"new_relic"}},
+	},
+}
+
+// mockAdvancedVariables are the parsed variable definitions for the advanced repo.
+var mockAdvancedVariables = []engine.Variable{
+	{
+		Name:        "additional_regions",
+		Description: "Additional AWS regions which users can provision resources.",
+		Type:        engine.VarType{Kind: engine.TypeList, ElementType: &engine.VarType{Kind: engine.TypeString}},
+		Default:     []any{},
+		HasDefault:  true,
+	},
+	{
+		Name:        "terraform_repositories",
+		Description: "Map of GitHub repositories to create OIDC Roles for.",
+		Type: engine.VarType{Kind: engine.TypeMap, ElementType: &engine.VarType{
+			Kind: engine.TypeObject,
+			Attributes: []engine.ObjectAttribute{
+				{Name: "github_org", Type: engine.VarType{Kind: engine.TypeString}, Optional: true, Default: "hayward-solutions"},
+				{Name: "github_repo", Type: engine.VarType{Kind: engine.TypeString}, Optional: false},
+			},
+		}},
+		Default:    map[string]any{},
+		HasDefault: true,
+	},
+	{
+		Name:        "ecr_repositories",
+		Description: "Map of GitHub repositories to create ECR repositories and OIDC Roles for.",
+		Type: engine.VarType{Kind: engine.TypeMap, ElementType: &engine.VarType{
+			Kind: engine.TypeObject,
+			Attributes: []engine.ObjectAttribute{
+				{Name: "github_org", Type: engine.VarType{Kind: engine.TypeString}, Optional: true, Default: "hayward-solutions"},
+				{Name: "github_repo", Type: engine.VarType{Kind: engine.TypeString}, Optional: false},
+			},
+		}},
+		Default:    map[string]any{},
+		HasDefault: true,
+	},
+	{
+		Name: "new_relic",
+		Type: engine.VarType{Kind: engine.TypeObject, Attributes: []engine.ObjectAttribute{
+			{Name: "account_id", Type: engine.VarType{Kind: engine.TypeString}, Optional: true, Default: "7029769"},
+			{Name: "enabled", Type: engine.VarType{Kind: engine.TypeBool}, Optional: true, Default: false},
+			{Name: "region", Type: engine.VarType{Kind: engine.TypeString}, Optional: true, Default: "EU"},
+		}},
+		Default:    map[string]any{},
+		HasDefault: true,
+	},
+}
+
+// mockAdvancedEnvVars simulates current env var values for the advanced repo.
+var mockAdvancedEnvVars = map[string]string{
+	"TF_VAR_ADDITIONAL_REGIONS":      `["us-east-1", "eu-west-1"]`,
+	"TF_VAR_TERRAFORM_REPOSITORIES":  `{"api": {"github_repo": "api-gateway", "github_org": "acme-corp"}}`,
+}
+
+// isAdvancedRepo returns true for repos that use advanced mode in dev preview.
+func isAdvancedRepo(name string) bool {
+	return name == "infra-terraform"
+}
+
 func (h *DevPreviewHandler) RepoDetail(w http.ResponseWriter, r *http.Request) {
 	user := auth.UserFromContext(r.Context())
 	owner := r.PathValue("owner")
@@ -184,12 +257,152 @@ func (h *DevPreviewHandler) RepoDetail(w http.ResponseWriter, r *http.Request) {
 		Description: "A sample repository for preview mode",
 		HTMLURL:     "https://github.com/" + owner + "/" + name,
 	}
-	renderer.Page(w, "repo_detail", map[string]any{
+
+	data := map[string]any{
 		"User":       user,
 		"Repo":       repo,
 		"Tracked":    mockTrackedSet[owner+"/"+name],
 		"ActivePage": "repos",
+	}
+
+	if isAdvancedRepo(name) {
+		repo.Description = "Terraform modules for AWS infrastructure"
+		data["AdvancedMode"] = true
+		data["DispatchConfig"] = mockAdvancedConfig
+		data["Variables"] = mockAdvancedVariables
+	}
+
+	renderer.Page(w, "repo_detail", data)
+}
+
+// Advanced mode handlers
+
+func (h *DevPreviewHandler) AdvancedEnvDetail(w http.ResponseWriter, r *http.Request) {
+	user := auth.UserFromContext(r.Context())
+	owner := r.PathValue("owner")
+	name := r.PathValue("name")
+	envName := r.PathValue("env")
+	repo := &gh.Repo{ID: 103, Owner: owner, Name: name, FullName: owner + "/" + name, HTMLURL: "https://github.com/" + owner + "/" + name}
+	renderer.Page(w, "advanced_env_detail", map[string]any{
+		"User":       user,
+		"Repo":       repo,
+		"EnvName":    envName,
+		"Config":     mockAdvancedConfig,
+		"Variables":  mockAdvancedVariables,
+		"ActivePage": "repos",
 	})
+}
+
+func (h *DevPreviewHandler) GetStep(w http.ResponseWriter, r *http.Request) {
+	owner := r.PathValue("owner")
+	name := r.PathValue("name")
+	envName := r.PathValue("env")
+	stepIdxStr := r.PathValue("stepIdx")
+	stepIdx := 0
+	if v, err := strconv.Atoi(stepIdxStr); err == nil {
+		stepIdx = v
+	}
+
+	if stepIdx >= len(mockAdvancedConfig.Flow) {
+		http.Error(w, "step not found", http.StatusNotFound)
+		return
+	}
+
+	step := mockAdvancedConfig.Flow[stepIdx]
+	ignoreSet := mockAdvancedConfig.IgnoreSet()
+	varMap := make(map[string]engine.Variable)
+	for _, v := range mockAdvancedVariables {
+		varMap[v.Name] = v
+	}
+
+	var stepVars []VarWithValue
+	for _, inputName := range step.Inputs {
+		if ignoreSet[inputName] {
+			continue
+		}
+		v, ok := varMap[inputName]
+		if !ok {
+			continue
+		}
+		vwv := VarWithValue{Variable: v}
+		if rawVal, ok := mockAdvancedEnvVars[strings.ToUpper("TF_VAR_"+inputName)]; ok {
+			if v.Type.Kind != engine.TypeString {
+				if parsed, err := engine.JSONToGoValue(rawVal); err == nil {
+					vwv.Value = parsed
+					vwv.ValueJSON = rawVal
+				}
+			} else {
+				vwv.Value = rawVal
+				vwv.ValueJSON = rawVal
+			}
+		}
+		stepVars = append(stepVars, vwv)
+	}
+
+	renderer.Partial(w, "advanced_step", StepData{
+		Step:      step,
+		Variables: stepVars,
+		StepIndex: stepIdx,
+		LastStep:  len(mockAdvancedConfig.Flow) - 1,
+		Owner:     owner,
+		Name:      name,
+		EnvName:   envName,
+	})
+}
+
+func (h *DevPreviewHandler) SaveStep(w http.ResponseWriter, r *http.Request) {
+	stepIdxStr := r.PathValue("stepIdx")
+	stepIdx, _ := strconv.Atoi(stepIdxStr)
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "invalid form", http.StatusBadRequest)
+		return
+	}
+
+	if stepIdx >= len(mockAdvancedConfig.Flow) {
+		http.Error(w, "step not found", http.StatusNotFound)
+		return
+	}
+
+	step := mockAdvancedConfig.Flow[stepIdx]
+	ignoreSet := mockAdvancedConfig.IgnoreSet()
+	varMap := make(map[string]engine.Variable)
+	for _, v := range mockAdvancedVariables {
+		varMap[v.Name] = v
+	}
+
+	for _, inputName := range step.Inputs {
+		if ignoreSet[inputName] {
+			continue
+		}
+		v, ok := varMap[inputName]
+		if !ok {
+			continue
+		}
+
+		var value string
+		switch v.Type.Kind {
+		case engine.TypeString:
+			value = r.FormValue("var_" + inputName)
+		case engine.TypeBool:
+			value = r.FormValue("var_" + inputName)
+			if value == "" {
+				value = "false"
+			}
+		case engine.TypeNumber:
+			value = r.FormValue("var_" + inputName)
+		default:
+			value, _ = reassembleComplexValue(r, inputName, v.Type)
+		}
+
+		if value == "" && v.HasDefault {
+			continue
+		}
+		mockAdvancedEnvVars[strings.ToUpper("TF_VAR_"+inputName)] = value
+	}
+
+	w.Header().Set("HX-Trigger", `{"showToast": {"message": "Step saved", "type": "success"}}`)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *DevPreviewHandler) TrackRepo(w http.ResponseWriter, r *http.Request) {
@@ -269,6 +482,7 @@ func (h *DevPreviewHandler) ListEnvironments(w http.ResponseWriter, r *http.Requ
 		"Owner":        owner,
 		"Name":         name,
 		"RepoID":       int64(101),
+		"Advanced":     r.URL.Query().Get("advanced") == "true",
 	})
 }
 
@@ -277,12 +491,16 @@ func (h *DevPreviewHandler) NewEnvironmentPage(w http.ResponseWriter, r *http.Re
 	owner := r.PathValue("owner")
 	name := r.PathValue("name")
 	repo := &gh.Repo{ID: 101, Owner: owner, Name: name, FullName: owner + "/" + name, HTMLURL: "https://github.com/" + owner + "/" + name}
-	renderer.Page(w, "env_new", map[string]any{
+	data := map[string]any{
 		"User":         user,
 		"Repo":         repo,
 		"Environments": mockEnvironments,
 		"ActivePage":   "repos",
-	})
+	}
+	if r.URL.Query().Get("advanced") == "true" || isAdvancedRepo(name) {
+		data["AdvancedMode"] = true
+	}
+	renderer.Page(w, "env_new", data)
 }
 
 func (h *DevPreviewHandler) EnvDetail(w http.ResponseWriter, r *http.Request) {
@@ -307,8 +525,12 @@ func (h *DevPreviewHandler) CreateEnvironment(w http.ResponseWriter, r *http.Req
 	if err := r.ParseForm(); err == nil && r.FormValue("name") != "" {
 		envName = r.FormValue("name")
 	}
+	redirect := "/repos/" + owner + "/" + name + "/environments/" + envName
+	if r.FormValue("advanced") == "true" || isAdvancedRepo(name) {
+		redirect += "/advanced"
+	}
 	w.Header().Set("HX-Trigger", `{"showToast": {"message": "Environment created", "type": "success"}}`)
-	w.Header().Set("HX-Redirect", "/repos/"+owner+"/"+name+"/environments/"+envName)
+	w.Header().Set("HX-Redirect", redirect)
 	w.WriteHeader(http.StatusNoContent)
 }
 

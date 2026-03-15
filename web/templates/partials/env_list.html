@@ -4,7 +4,7 @@
 {{else if .Environments}}
 <div class="divide-y divide-border-subtle">
     {{range .Environments}}
-    <a href="/repos/{{$.Owner}}/{{$.Name}}/environments/{{.Name}}"
+    <a href="/repos/{{$.Owner}}/{{$.Name}}/environments/{{.Name}}{{if $.Advanced}}/advanced{{end}}"
        class="px-4 py-2.5 hover:bg-surface-hover transition-colors flex items-center gap-2 no-underline group">
         <span class="status-dot bg-status-success"></span>
         <span class="text-sm text-text-primary flex-1 group-hover:text-accent">{{.Name}}</span>

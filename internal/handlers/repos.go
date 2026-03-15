@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/hayward-solutions/dispatch.v2/internal/auth"
+	"github.com/hayward-solutions/dispatch.v2/internal/dispatch"
+	"github.com/hayward-solutions/dispatch.v2/internal/engine"
 	gh "github.com/hayward-solutions/dispatch.v2/internal/github"
 	"github.com/hayward-solutions/dispatch.v2/internal/models"
 )
@@ -156,10 +158,40 @@ func (h *ReposHandler) RepoDetail(w http.ResponseWriter, r *http.Request) {
 
 	tracked, _ := h.trackedRepos.IsTracked(r.Context(), user.ID, owner, name)
 
-	renderer.Page(w, "repo_detail", map[string]any{
+	data := map[string]any{
 		"User":       user,
 		"Repo":       repo,
 		"Tracked":    tracked,
 		"ActivePage": "repos",
-	})
+	}
+
+	// Check for advanced mode via .dispatch.yaml
+	configBytes, err := gh.GetFileContent(r.Context(), client, owner, name, ".dispatch.yaml")
+	if err == nil {
+		cfg, err := dispatch.Parse(configBytes)
+		if err == nil {
+			data["AdvancedMode"] = true
+			data["DispatchConfig"] = cfg
+
+			// Fetch and parse variables
+			varsBytes, err := gh.GetFileContent(r.Context(), client, owner, name, cfg.VariablesPath)
+			if err == nil {
+				eng, err := engine.GetEngine(cfg.Mode)
+				if err == nil {
+					variables, err := eng.ParseVariables(varsBytes)
+					if err == nil {
+						data["Variables"] = variables
+					} else {
+						slog.Error("parse variables", "error", err)
+					}
+				}
+			} else {
+				slog.Error("get variables file", "path", cfg.VariablesPath, "error", err)
+			}
+		} else {
+			slog.Warn("parse dispatch config", "error", err)
+		}
+	}
+
+	renderer.Page(w, "repo_detail", data)
 }

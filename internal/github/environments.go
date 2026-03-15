@@ -54,6 +54,21 @@ func UpdateEnvVariable(ctx context.Context, client *github.Client, repoID int, e
 	return err
 }
 
+// CreateOrUpdateEnvVariableByName creates or updates an environment variable by name.
+// It attempts to create first, and if the variable already exists (409 conflict), it updates instead.
+func CreateOrUpdateEnvVariableByName(ctx context.Context, client *github.Client, repoID int, envName, name, value string) error {
+	v := &github.ActionsVariable{Name: name, Value: value}
+	_, err := client.Actions.CreateEnvVariable(ctx, repoID, envName, v)
+	if err != nil {
+		// If already exists, try update
+		_, updateErr := client.Actions.UpdateEnvVariable(ctx, repoID, envName, v)
+		if updateErr != nil {
+			return updateErr
+		}
+	}
+	return nil
+}
+
 func DeleteEnvVariable(ctx context.Context, client *github.Client, repoID int, envName, name string) error {
 	_, err := client.Actions.DeleteEnvVariable(ctx, repoID, envName, name)
 	return err

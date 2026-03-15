@@ -1,0 +1,242 @@
+{{define "advanced_step.html"}}
+<form hx-post="/repos/{{.Owner}}/{{.Name}}/environments/{{.EnvName}}/step/{{.StepIndex}}"
+      hx-swap="none"
+      class="p-4 flex flex-col gap-4">
+
+    {{range .Variables}}
+    <div class="flex flex-col gap-1">
+        <div class="flex items-center gap-2">
+            <label class="text-sm font-medium text-text-primary">{{.Name}}</label>
+            {{if not .HasDefault}}
+            <span class="text-[10px] font-medium text-status-failure bg-status-failure/10 px-1.5 py-0.5 rounded">required</span>
+            {{end}}
+            {{if eq .Type.Kind.String "list"}}
+            <span class="text-[10px] font-medium text-text-muted bg-surface-2 px-1.5 py-0.5 rounded">list</span>
+            {{else if eq .Type.Kind.String "map"}}
+            <span class="text-[10px] font-medium text-text-muted bg-surface-2 px-1.5 py-0.5 rounded">map</span>
+            {{else if eq .Type.Kind.String "object"}}
+            <span class="text-[10px] font-medium text-text-muted bg-surface-2 px-1.5 py-0.5 rounded">object</span>
+            {{else if eq .Type.Kind.String "bool"}}
+            <span class="text-[10px] font-medium text-text-muted bg-surface-2 px-1.5 py-0.5 rounded">bool</span>
+            {{end}}
+        </div>
+        {{if .Description}}
+        <p class="text-[12px] text-text-muted">{{.Description}}</p>
+        {{end}}
+
+        {{if eq .Type.Kind.String "string"}}
+        {{/* String input */}}
+        <input type="text" name="var_{{.Name}}"
+               value="{{if .Value}}{{.Value}}{{end}}"
+               placeholder="{{if .HasDefault}}default: {{jsonPretty .Default}}{{else}}Enter value...{{end}}"
+               class="w-full bg-surface-2 border border-border-default rounded px-3 py-2 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent"
+               {{if not .HasDefault}}required{{end}}>
+
+        {{else if eq .Type.Kind.String "number"}}
+        {{/* Number input */}}
+        <input type="number" name="var_{{.Name}}"
+               value="{{if .Value}}{{.Value}}{{end}}"
+               placeholder="{{if .HasDefault}}default: {{jsonPretty .Default}}{{end}}"
+               class="w-full bg-surface-2 border border-border-default rounded px-3 py-2 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent"
+               {{if not .HasDefault}}required{{end}}>
+
+        {{else if eq .Type.Kind.String "bool"}}
+        {{/* Boolean toggle */}}
+        <label class="inline-flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" name="var_{{.Name}}" value="true"
+                   {{if .Value}}{{if eq (jsonPretty .Value) "true"}}checked{{end}}{{end}}
+                   class="w-4 h-4 rounded border-border-default bg-surface-2 text-accent focus:ring-accent">
+            <span class="text-sm text-text-muted">Enabled</span>
+        </label>
+
+        {{else if eq .Type.Kind.String "list"}}
+        {{/* List: dynamic rows */}}
+        {{$varName := .Name}}
+        {{$elemKind := "text"}}
+        {{if .Type.ElementType}}{{if eq .Type.ElementType.Kind.String "number"}}{{$elemKind = "number"}}{{end}}{{end}}
+        {{$items := toSlice .Value}}
+        <div data-dynamic class="flex flex-col gap-2">
+            <input type="hidden" name="var_{{$varName}}__count" data-count value="{{len $items}}">
+            <div data-rows class="flex flex-col gap-2">
+                {{range $i, $v := $items}}
+                <div class="flex gap-2 items-center" data-row>
+                    <input type="{{$elemKind}}" name="var_{{$varName}}__list__{{$i}}"
+                           value="{{$v}}"
+                           class="flex-1 bg-surface-2 border border-border-default rounded px-3 py-2 text-sm text-text-primary outline-none focus:border-accent">
+                    <button type="button" onclick="removeRow(this)" class="btn btn-ghost text-xs text-status-failure">Remove</button>
+                </div>
+                {{end}}
+            </div>
+            <template data-row-template>
+                <div class="flex gap-2 items-center" data-row>
+                    <input type="{{$elemKind}}" name="var_{{$varName}}__list____IDX__"
+                           placeholder="Enter value..."
+                           class="flex-1 bg-surface-2 border border-border-default rounded px-3 py-2 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent">
+                    <button type="button" onclick="removeRow(this)" class="btn btn-ghost text-xs text-status-failure">Remove</button>
+                </div>
+            </template>
+            <button type="button" onclick="addRow(this.closest('[data-dynamic]'))" class="btn btn-ghost text-xs">+ Add item</button>
+        </div>
+
+        {{else if eq .Type.Kind.String "map"}}
+        {{$varName := .Name}}
+        {{if .Type.ElementType}}{{if eq .Type.ElementType.Kind.String "object"}}
+        {{/* Map of objects: entries with nested fields */}}
+        {{$attrs := .Type.ElementType.Attributes}}
+        {{$entries := mapEntries .Value}}
+        <div data-dynamic class="flex flex-col gap-3">
+            <input type="hidden" name="var_{{$varName}}__count" data-count value="{{len $entries}}">
+            <div data-rows class="flex flex-col gap-3">
+                {{range $i, $entry := $entries}}
+                <div class="border border-border-subtle rounded p-3 flex flex-col gap-3" data-row>
+                    <div class="flex items-center gap-2">
+                        <input type="text" name="var_{{$varName}}__map__{{$i}}__key"
+                               value="{{$entry.Key}}"
+                               placeholder="Key"
+                               class="w-40 bg-surface-2 border border-border-default rounded px-3 py-2 text-sm font-medium text-text-primary outline-none focus:border-accent">
+                        <button type="button" onclick="removeRow(this)" class="btn btn-ghost text-xs text-status-failure ml-auto">Remove</button>
+                    </div>
+                    <div class="flex flex-col gap-3 pl-2 border-l-2 border-border-subtle">
+                        {{range $attrs}}
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[11px] text-text-muted flex items-center gap-1">
+                                {{.Name}}
+                                {{if .Optional}}<span class="text-text-muted italic text-[10px]">(optional{{if .Default}}, default: {{jsonPretty .Default}}{{end}})</span>{{end}}
+                                {{if not .Optional}}<span class="text-[10px] font-medium text-status-failure bg-status-failure/10 px-1 py-0.5 rounded">required</span>{{end}}
+                            </label>
+                            {{if eq .Type.Kind.String "bool"}}
+                            <label class="inline-flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" name="var_{{$varName}}__map__{{$i}}__obj__{{.Name}}" value="true"
+                                       {{if toBool (mapGet $entry.Value .Name)}}checked{{end}}
+                                       class="w-4 h-4 rounded border-border-default bg-surface-2 text-accent focus:ring-accent">
+                                <span class="text-sm text-text-muted">Enabled</span>
+                            </label>
+                            {{else}}
+                            <input type="{{if eq .Type.Kind.String "number"}}number{{else}}text{{end}}"
+                                   name="var_{{$varName}}__map__{{$i}}__obj__{{.Name}}"
+                                   value="{{mapGet $entry.Value .Name}}"
+                                   placeholder="{{if .Default}}default: {{jsonPretty .Default}}{{end}}"
+                                   class="w-full bg-surface-2 border border-border-default rounded px-3 py-2 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent"
+                                   {{if not .Optional}}required{{end}}>
+                            {{end}}
+                        </div>
+                        {{end}}
+                    </div>
+                </div>
+                {{end}}
+            </div>
+            <template data-row-template>
+                <div class="border border-border-subtle rounded p-3 flex flex-col gap-3" data-row>
+                    <div class="flex items-center gap-2">
+                        <input type="text" name="var_{{$varName}}__map____IDX____key"
+                               placeholder="Key"
+                               class="w-40 bg-surface-2 border border-border-default rounded px-3 py-2 text-sm font-medium text-text-primary placeholder:text-text-muted outline-none focus:border-accent">
+                        <button type="button" onclick="removeRow(this)" class="btn btn-ghost text-xs text-status-failure ml-auto">Remove</button>
+                    </div>
+                    <div class="flex flex-col gap-3 pl-2 border-l-2 border-border-subtle">
+                        {{range $attrs}}
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[11px] text-text-muted flex items-center gap-1">
+                                {{.Name}}
+                                {{if .Optional}}<span class="text-text-muted italic text-[10px]">(optional{{if .Default}}, default: {{jsonPretty .Default}}{{end}})</span>{{end}}
+                                {{if not .Optional}}<span class="text-[10px] font-medium text-status-failure bg-status-failure/10 px-1 py-0.5 rounded">required</span>{{end}}
+                            </label>
+                            {{if eq .Type.Kind.String "bool"}}
+                            <label class="inline-flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" name="var_{{$varName}}__map____IDX____obj__{{.Name}}" value="true"
+                                       class="w-4 h-4 rounded border-border-default bg-surface-2 text-accent focus:ring-accent">
+                                <span class="text-sm text-text-muted">Enabled</span>
+                            </label>
+                            {{else}}
+                            <input type="{{if eq .Type.Kind.String "number"}}number{{else}}text{{end}}"
+                                   name="var_{{$varName}}__map____IDX____obj__{{.Name}}"
+                                   placeholder="{{if .Default}}default: {{jsonPretty .Default}}{{end}}"
+                                   class="w-full bg-surface-2 border border-border-default rounded px-3 py-2 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent">
+                            {{end}}
+                        </div>
+                        {{end}}
+                    </div>
+                </div>
+            </template>
+            <button type="button" onclick="addRow(this.closest('[data-dynamic]'))" class="btn btn-ghost text-xs">+ Add entry</button>
+        </div>
+
+        {{else}}
+        {{/* Map of simple values: key-value rows */}}
+        {{$entries := mapEntries .Value}}
+        {{$elemKind := "text"}}
+        {{if .Type.ElementType}}{{if eq .Type.ElementType.Kind.String "number"}}{{$elemKind = "number"}}{{end}}{{end}}
+        <div data-dynamic class="flex flex-col gap-2">
+            <input type="hidden" name="var_{{$varName}}__count" data-count value="{{len $entries}}">
+            <div data-rows class="flex flex-col gap-2">
+                {{range $i, $entry := $entries}}
+                <div class="flex gap-2 items-center" data-row>
+                    <input type="text" name="var_{{$varName}}__map__{{$i}}__key"
+                           value="{{$entry.Key}}" placeholder="Key"
+                           class="w-1/3 bg-surface-2 border border-border-default rounded px-3 py-2 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent">
+                    <input type="{{$elemKind}}" name="var_{{$varName}}__map__{{$i}}__val"
+                           value="{{$entry.Value}}" placeholder="Value"
+                           class="flex-1 bg-surface-2 border border-border-default rounded px-3 py-2 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent">
+                    <button type="button" onclick="removeRow(this)" class="btn btn-ghost text-xs text-status-failure">Remove</button>
+                </div>
+                {{end}}
+            </div>
+            <template data-row-template>
+                <div class="flex gap-2 items-center" data-row>
+                    <input type="text" name="var_{{$varName}}__map____IDX____key"
+                           placeholder="Key"
+                           class="w-1/3 bg-surface-2 border border-border-default rounded px-3 py-2 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent">
+                    <input type="{{$elemKind}}" name="var_{{$varName}}__map____IDX____val"
+                           placeholder="Value"
+                           class="flex-1 bg-surface-2 border border-border-default rounded px-3 py-2 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent">
+                    <button type="button" onclick="removeRow(this)" class="btn btn-ghost text-xs text-status-failure">Remove</button>
+                </div>
+            </template>
+            <button type="button" onclick="addRow(this.closest('[data-dynamic]'))" class="btn btn-ghost text-xs">+ Add entry</button>
+        </div>
+        {{end}}{{end}}
+
+        {{else if eq .Type.Kind.String "object"}}
+        {{/* Object: individual fields per attribute */}}
+        {{$varName := .Name}}
+        {{$val := .Value}}
+        <div class="flex flex-col gap-3 pl-2 border-l-2 border-border-subtle">
+            {{range .Type.Attributes}}
+            <div class="flex flex-col gap-1">
+                <label class="text-[11px] text-text-muted flex items-center gap-1">
+                    {{.Name}}
+                    {{if .Optional}}<span class="text-text-muted italic text-[10px]">(optional{{if .Default}}, default: {{jsonPretty .Default}}{{end}})</span>{{end}}
+                    {{if not .Optional}}<span class="text-[10px] font-medium text-status-failure bg-status-failure/10 px-1 py-0.5 rounded">required</span>{{end}}
+                </label>
+                {{if eq .Type.Kind.String "bool"}}
+                <label class="inline-flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="var_{{$varName}}__obj__{{.Name}}" value="true"
+                           {{if toBool (mapGet $val .Name)}}checked{{end}}
+                           class="w-4 h-4 rounded border-border-default bg-surface-2 text-accent focus:ring-accent">
+                    <span class="text-sm text-text-muted">Enabled</span>
+                </label>
+                {{else}}
+                <input type="{{if eq .Type.Kind.String "number"}}number{{else}}text{{end}}"
+                       name="var_{{$varName}}__obj__{{.Name}}"
+                       value="{{mapGet $val .Name}}"
+                       placeholder="{{if .Default}}default: {{jsonPretty .Default}}{{end}}"
+                       class="w-full bg-surface-2 border border-border-default rounded px-3 py-2 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent"
+                       {{if not .Optional}}required{{end}}>
+                {{end}}
+            </div>
+            {{end}}
+        </div>
+
+        {{end}}
+    </div>
+    {{end}}
+
+    {{if not .Variables}}
+    <p class="text-sm text-text-muted">No configurable variables in this step.</p>
+    {{else}}
+    <div class="flex justify-end pt-2 border-t border-border-subtle">
+        <button type="submit" class="btn btn-primary text-xs">Save</button>
+    </div>
+    {{end}}
+</form>
+{{end}}

@@ -1,6 +1,7 @@
 package tmpl
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io"
@@ -8,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -35,6 +37,20 @@ func New(fsys fs.FS, dev bool) (*Renderer, error) {
 			"duration": durationFunc,
 			"timeAgo":  timeAgoFunc,
 			"shortSHA": func(s string) string { if len(s) > 7 { return s[:7] }; return s },
+			"add":      func(a, b int) int { return a + b },
+			"sub":      func(a, b int) int { return a - b },
+			"seq": func(n int) []int {
+				s := make([]int, n)
+				for i := range s {
+					s[i] = i
+				}
+				return s
+			},
+			"jsonPretty":  jsonPrettyFunc,
+			"mapGet":      mapGetFunc,
+			"mapEntries":  mapEntriesFunc,
+			"toSlice":     toSliceFunc,
+			"toBool":      toBoolFunc,
 		},
 	}
 
@@ -204,6 +220,18 @@ func timeAgoFunc(t time.Time) string {
 	}
 }
 
+// jsonPrettyFunc returns indented JSON for displaying complex values.
+func jsonPrettyFunc(v any) string {
+	if v == nil {
+		return ""
+	}
+	b, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return fmt.Sprintf("%v", v)
+	}
+	return string(b)
+}
+
 // dictFunc creates a map from alternating key-value pairs for use in templates.
 // Usage: {{template "partial" dict "key1" val1 "key2" val2}}
 func dictFunc(pairs ...any) (map[string]any, error) {
@@ -219,4 +247,68 @@ func dictFunc(pairs ...any) (map[string]any, error) {
 		m[key] = pairs[i+1]
 	}
 	return m, nil
+}
+
+// MapEntry is a key-value pair for iterating maps in templates.
+type MapEntry struct {
+	Key   string
+	Value any
+}
+
+// mapGetFunc safely indexes into a map[string]any typed as any.
+func mapGetFunc(m any, key string) any {
+	if m == nil {
+		return nil
+	}
+	switch mm := m.(type) {
+	case map[string]any:
+		return mm[key]
+	default:
+		return nil
+	}
+}
+
+// mapEntriesFunc converts a map[string]any to a sorted slice of MapEntry.
+func mapEntriesFunc(m any) []MapEntry {
+	if m == nil {
+		return nil
+	}
+	mm, ok := m.(map[string]any)
+	if !ok {
+		return nil
+	}
+	entries := make([]MapEntry, 0, len(mm))
+	for k, v := range mm {
+		entries = append(entries, MapEntry{Key: k, Value: v})
+	}
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].Key < entries[j].Key
+	})
+	return entries
+}
+
+// toSliceFunc coerces any to []any. Returns empty slice for nil.
+func toSliceFunc(v any) []any {
+	if v == nil {
+		return []any{}
+	}
+	if s, ok := v.([]any); ok {
+		return s
+	}
+	return []any{}
+}
+
+// toBoolFunc safely coerces any to bool.
+func toBoolFunc(v any) bool {
+	if v == nil {
+		return false
+	}
+	switch b := v.(type) {
+	case bool:
+		return b
+	case string:
+		return b == "true"
+	default:
+		return false
+	}
 }

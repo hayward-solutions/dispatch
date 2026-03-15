@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -80,7 +81,8 @@ func run() error {
 		}, nil
 	}
 
-	authMiddleware := auth.NewMiddleware(sessionStore, cfg.SessionSecret, cfg.EncryptionKey, getUserFunc)
+	secureCookies := strings.HasPrefix(cfg.BaseURL, "https://")
+	authMiddleware := auth.NewMiddleware(sessionStore, cfg.SessionSecret, cfg.EncryptionKey, secureCookies, getUserFunc)
 
 	// Templates
 	templateFS, err := fs.Sub(web.TemplateFS, "templates")
@@ -96,11 +98,12 @@ func run() error {
 	handlers.SetRenderer(renderer)
 
 	// Handlers
-	authHandler := handlers.NewAuthHandler(oauthCfg, sessionStore, userStore, authMiddleware, cfg.EncryptionKey)
+	authHandler := handlers.NewAuthHandler(oauthCfg, sessionStore, userStore, authMiddleware, cfg.EncryptionKey, secureCookies)
 	dashboardHandler := handlers.NewDashboardHandler(trackedRepoStore)
 	reposHandler := handlers.NewReposHandler(trackedRepoStore)
 	workflowsHandler := handlers.NewWorkflowsHandler()
 	envsHandler := handlers.NewEnvironmentsHandler()
+	advancedHandler := handlers.NewAdvancedHandler()
 
 	// Router
 	mux := http.NewServeMux()
@@ -166,6 +169,10 @@ func run() error {
 	protect("GET /repos/{owner}/{name}/environments/{env}/secrets", envsHandler.ListEnvSecrets)
 	protect("POST /repos/{owner}/{name}/environments/{env}/secrets", envsHandler.CreateEnvSecret)
 	protect("DELETE /repos/{owner}/{name}/environments/{env}/secrets/{secretName}", envsHandler.DeleteEnvSecret)
+
+	protect("GET /repos/{owner}/{name}/environments/{env}/advanced", advancedHandler.AdvancedEnvDetail)
+	protect("GET /repos/{owner}/{name}/environments/{env}/step/{stepIdx}", advancedHandler.GetStep)
+	protect("POST /repos/{owner}/{name}/environments/{env}/step/{stepIdx}", advancedHandler.SaveStep)
 
 	protect("GET /repos/{owner}/{name}/environments/{env}/deployments", envsHandler.ListEnvDeployments)
 	protect("GET /repos/{owner}/{name}/environments/{env}/dispatch", envsHandler.DispatchPage)
@@ -275,6 +282,10 @@ func runDevPreview(ctx context.Context, cfg *config.Config) error {
 	protect("GET /repos/{owner}/{name}/environments/{env}/secrets", preview.ListEnvSecrets)
 	protect("POST /repos/{owner}/{name}/environments/{env}/secrets", preview.CreateEnvSecret)
 	protect("DELETE /repos/{owner}/{name}/environments/{env}/secrets/{secretName}", preview.DeleteEnvSecret)
+
+	protect("GET /repos/{owner}/{name}/environments/{env}/advanced", preview.AdvancedEnvDetail)
+	protect("GET /repos/{owner}/{name}/environments/{env}/step/{stepIdx}", preview.GetStep)
+	protect("POST /repos/{owner}/{name}/environments/{env}/step/{stepIdx}", preview.SaveStep)
 
 	protect("GET /repos/{owner}/{name}/environments/{env}/deployments", preview.ListEnvDeployments)
 	protect("GET /repos/{owner}/{name}/environments/{env}/dispatch", preview.DispatchPage)

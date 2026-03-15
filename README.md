@@ -12,6 +12,7 @@ A self-hosted dashboard for managing GitHub Actions workflows and environments. 
 - **Repository tracking** — browse and track your GitHub repositories
 - **Environment management** — create, configure, and delete GitHub environments
 - **Variables & secrets** — CRUD operations on environment variables and secrets
+- **Advanced configuration** — typed, step-based environment config for Terraform repos via [`.dispatch.yaml`](docs/advanced-configuration.md)
 - **Workflow dispatch** — trigger `workflow_dispatch` workflows with custom inputs
 - **Deployment history** — view deployment status and history per environment
 - **Command palette** — quick navigation with `Cmd+K`
@@ -89,6 +90,15 @@ cp .env.example .env
 
 docker compose up -d
 ```
+
+## Simple vs Advanced Mode
+
+Dispatch supports two modes of environment management:
+
+- **Simple** — manage flat key-value environment variables and secrets directly. Works for any repository.
+- **Advanced** — structured, typed configuration driven by a `.dispatch.yaml` file in the repo root. Designed for Terraform and other IaC repositories with complex variable types (lists, maps, objects). Variables are stored as `TF_VAR_*` GitHub environment variables and picked up by Terraform automatically.
+
+See the [Advanced Configuration Guide](docs/advanced-configuration.md) for setup instructions.
 
 ## Architecture
 

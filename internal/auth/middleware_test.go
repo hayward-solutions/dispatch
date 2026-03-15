@@ -175,7 +175,7 @@ func TestNewMiddleware(t *testing.T) {
 		return nil, errors.New("not implemented")
 	}
 
-	m := NewMiddleware(nil, secret, encKey, getUserFunc)
+	m := NewMiddleware(nil, secret, encKey, false, getUserFunc)
 	if m == nil {
 		t.Fatal("expected non-nil middleware")
 	}
