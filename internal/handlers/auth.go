@@ -14,20 +14,22 @@ import (
 )
 
 type AuthHandler struct {
-	oauthConfig   *oauth2.Config
-	sessions      *auth.SessionStore
-	users         *models.UserStore
+	oauthConfig    *oauth2.Config
+	sessions       *auth.SessionStore
+	users          *models.UserStore
 	authMiddleware *auth.Middleware
-	encryptionKey []byte
+	encryptionKey  []byte
+	secureCookies  bool
 }
 
-func NewAuthHandler(oauthConfig *oauth2.Config, sessions *auth.SessionStore, users *models.UserStore, authMiddleware *auth.Middleware, encryptionKey []byte) *AuthHandler {
+func NewAuthHandler(oauthConfig *oauth2.Config, sessions *auth.SessionStore, users *models.UserStore, authMiddleware *auth.Middleware, encryptionKey []byte, secureCookies bool) *AuthHandler {
 	return &AuthHandler{
 		oauthConfig:    oauthConfig,
 		sessions:       sessions,
 		users:          users,
 		authMiddleware: authMiddleware,
 		encryptionKey:  encryptionKey,
+		secureCookies:  secureCookies,
 	}
 }
 
@@ -56,6 +58,7 @@ func (h *AuthHandler) BeginOAuth(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		MaxAge:   300, // 5 minutes
 		HttpOnly: true,
+		Secure:   h.secureCookies,
 		SameSite: http.SameSiteLaxMode,
 	})
 
@@ -78,10 +81,12 @@ func (h *AuthHandler) Callback(w http.ResponseWriter, r *http.Request) {
 
 	// Clear state cookie
 	http.SetCookie(w, &http.Cookie{
-		Name:   "oauth_state",
-		Value:  "",
-		Path:   "/",
-		MaxAge: -1,
+		Name:     "oauth_state",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   h.secureCookies,
 	})
 
 	// Exchange code for token

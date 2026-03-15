@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -80,7 +81,8 @@ func run() error {
 		}, nil
 	}
 
-	authMiddleware := auth.NewMiddleware(sessionStore, cfg.SessionSecret, cfg.EncryptionKey, getUserFunc)
+	secureCookies := strings.HasPrefix(cfg.BaseURL, "https://")
+	authMiddleware := auth.NewMiddleware(sessionStore, cfg.SessionSecret, cfg.EncryptionKey, secureCookies, getUserFunc)
 
 	// Templates
 	templateFS, err := fs.Sub(web.TemplateFS, "templates")
@@ -96,7 +98,7 @@ func run() error {
 	handlers.SetRenderer(renderer)
 
 	// Handlers
-	authHandler := handlers.NewAuthHandler(oauthCfg, sessionStore, userStore, authMiddleware, cfg.EncryptionKey)
+	authHandler := handlers.NewAuthHandler(oauthCfg, sessionStore, userStore, authMiddleware, cfg.EncryptionKey, secureCookies)
 	dashboardHandler := handlers.NewDashboardHandler(trackedRepoStore)
 	reposHandler := handlers.NewReposHandler(trackedRepoStore)
 	workflowsHandler := handlers.NewWorkflowsHandler()

@@ -30,13 +30,14 @@ func UserFromContext(ctx context.Context) *ContextUser {
 }
 
 type Middleware struct {
-	sessions     *SessionStore
-	secureCookie *securecookie.SecureCookie
+	sessions      *SessionStore
+	secureCookie  *securecookie.SecureCookie
 	encryptionKey []byte
-	getUserFunc  func(ctx context.Context, id int64) (*ContextUser, error)
+	secureCookies bool
+	getUserFunc   func(ctx context.Context, id int64) (*ContextUser, error)
 }
 
-func NewMiddleware(sessions *SessionStore, sessionSecret, encryptionKey []byte, getUserFunc func(ctx context.Context, id int64) (*ContextUser, error)) *Middleware {
+func NewMiddleware(sessions *SessionStore, sessionSecret, encryptionKey []byte, secureCookies bool, getUserFunc func(ctx context.Context, id int64) (*ContextUser, error)) *Middleware {
 	sc := securecookie.New(sessionSecret, nil)
 	sc.MaxAge(0) // no max age on the encoding side; we handle expiry in DB
 
@@ -44,6 +45,7 @@ func NewMiddleware(sessions *SessionStore, sessionSecret, encryptionKey []byte, 
 		sessions:      sessions,
 		secureCookie:  sc,
 		encryptionKey: encryptionKey,
+		secureCookies: secureCookies,
 		getUserFunc:   getUserFunc,
 	}
 }
@@ -107,7 +109,7 @@ func (m *Middleware) SetSessionCookie(w http.ResponseWriter, sessionID string, m
 		MaxAge:   maxAge,
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
-		Secure:   false, // set to true in production behind TLS
+		Secure:   m.secureCookies,
 	})
 	return nil
 }
@@ -119,5 +121,6 @@ func (m *Middleware) ClearSessionCookie(w http.ResponseWriter) {
 		Path:     "/",
 		MaxAge:   -1,
 		HttpOnly: true,
+		Secure:   m.secureCookies,
 	})
 }
