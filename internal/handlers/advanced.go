@@ -349,7 +349,7 @@ func reassembleList(r *http.Request, inputName string, elemType *engine.VarType)
 	if count < 0 || count > maxFormItems {
 		count = 0
 	}
-	items := make([]any, 0, count)
+	var items []any
 	for i := 0; i < count; i++ {
 		val := r.FormValue(fmt.Sprintf("var_%s__list__%d", inputName, i))
 		if val == "" {
