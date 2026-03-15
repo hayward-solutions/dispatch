@@ -342,8 +342,13 @@ func reassembleComplexValue(r *http.Request, inputName string, varType engine.Va
 	}
 }
 
+const maxFormItems = 1000
+
 func reassembleList(r *http.Request, inputName string, elemType *engine.VarType) (string, error) {
 	count, _ := strconv.Atoi(r.FormValue(fmt.Sprintf("var_%s__count", inputName)))
+	if count < 0 || count > maxFormItems {
+		count = 0
+	}
 	items := make([]any, 0, count)
 	for i := 0; i < count; i++ {
 		val := r.FormValue(fmt.Sprintf("var_%s__list__%d", inputName, i))
@@ -358,6 +363,9 @@ func reassembleList(r *http.Request, inputName string, elemType *engine.VarType)
 
 func reassembleMap(r *http.Request, inputName string, elemType *engine.VarType) (string, error) {
 	count, _ := strconv.Atoi(r.FormValue(fmt.Sprintf("var_%s__count", inputName)))
+	if count < 0 || count > maxFormItems {
+		count = 0
+	}
 	m := make(map[string]any)
 	for i := 0; i < count; i++ {
 		key := r.FormValue(fmt.Sprintf("var_%s__map__%d__key", inputName, i))
@@ -373,6 +381,9 @@ func reassembleMap(r *http.Request, inputName string, elemType *engine.VarType) 
 
 func reassembleMapObject(r *http.Request, inputName string, attrs []engine.ObjectAttribute) (string, error) {
 	count, _ := strconv.Atoi(r.FormValue(fmt.Sprintf("var_%s__count", inputName)))
+	if count < 0 || count > maxFormItems {
+		count = 0
+	}
 	m := make(map[string]any)
 	for i := 0; i < count; i++ {
 		key := r.FormValue(fmt.Sprintf("var_%s__map__%d__key", inputName, i))
